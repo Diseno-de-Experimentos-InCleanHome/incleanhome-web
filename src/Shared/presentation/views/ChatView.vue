@@ -14,8 +14,8 @@
       <div v-if="loading" class="loader-wrapper py-8"><div class="spinner"></div></div>
       <div v-else-if="!messages.length" class="empty-text py-8">Sé el primero en escribir</div>
       <div v-for="msg in messages" :key="msg.id"
-        :class="['msg-wrap', msg.senderId === auth.user?.id ? 'msg-mine' : 'msg-theirs']">
-        <div :class="['msg-bubble', msg.senderId === auth.user?.id ? 'bubble-mine' : 'bubble-theirs']">
+        :class="['msg-wrap', msg.isMine(auth.user?.id) ? 'msg-mine' : 'msg-theirs']">
+        <div :class="['msg-bubble', msg.isMine(auth.user?.id) ? 'bubble-mine' : 'bubble-theirs']">
           {{ msg.content }}
         </div>
         <span class="msg-time">{{ formatTime(msg.createdAt) }}</span>
@@ -23,6 +23,7 @@
     </div>
 
     <!-- Input -->
+    <div v-if="sendError" class="alert error-box mt-3">{{ sendError }}</div>
     <div class="chat-input mt-3 pt-3">
       <input
         v-model="newMessage"
@@ -51,6 +52,7 @@ const loading = ref(true);
 const newMessage = ref("");
 const msgContainer = ref(null);
 const otherName = ref("...");
+const sendError = ref("");
 
 const colors = ["#009960","#1A2E4A","#00B272","#00B272","#f59e0b","#ef4444"];
 function getColor(id) { return colors[id % colors.length]; }
@@ -59,9 +61,16 @@ function formatTime(d) { if (!d) return ""; return new Date(d).toLocaleTimeStrin
 async function sendMessage() {
   if (!newMessage.value.trim()) return;
   const content = newMessage.value;
-  newMessage.value = "";
-  await MessagingService.sendMessage(route.params.userId, content);
-  await load();
+  sendError.value = "";
+  try {
+    await MessagingService.sendMessage(route.params.userId, content);
+    // Solo limpiamos el input una vez que el mensaje quedó guardado; si el POST falla
+    // el usuario conserva lo que escribió.
+    newMessage.value = "";
+    await load();
+  } catch (e) {
+    sendError.value = e.response?.data?.error || t('common.error');
+  }
 }
 
 async function scrollBottom() {
@@ -123,6 +132,8 @@ onMounted(async () => {
 .bubble-mine { background:#009960;color:white;border-bottom-right-radius:4px; }
 .bubble-theirs { background:white;color:#1A2E4A;border:1px solid #c5e8d8;border-bottom-left-radius:4px; }
 .msg-time { font-size:0.6875rem;color:#7A8FA6;margin-top:2px; }
+
+.error-box { font-size: 0.875rem; }
 
 .chat-input { 
   display: flex; 

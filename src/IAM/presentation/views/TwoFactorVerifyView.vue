@@ -36,6 +36,7 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../application/auth.store.js";
 import { AuthenticationService } from "../../application/authentication.service.js";
+import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -55,8 +56,12 @@ async function handleVerify() {
   submitting.value = true;
   error.value = "";
   try {
-    const user = await AuthenticationService.verifyTwoFactor(code.value);
-    router.push(user.role === "worker" ? "/worker/dashboard" : "/client/search");
+    const result = await AuthenticationService.verifyTwoFactor(code.value);
+    if (result.membershipPending) {
+      router.push("/membership-pending");
+      return;
+    }
+    router.push(roleHomePath(result.user.role));
   } catch (e) {
     error.value = e.response?.data?.error || t('common.error');
   } finally {

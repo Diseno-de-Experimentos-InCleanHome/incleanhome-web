@@ -96,10 +96,13 @@ const deadlinePassed = computed(() =>
 async function load() {
   const id = route.params.id;
   event.value = await EventService.getById(id);
-  if (event.value.myApplicationStatus) {
-    const mine = await EventApplicationService.listMine();
-    myApplicationId = mine.find(a => a.eventId === Number(id))?.id ?? null;
-  }
+  myApplicationId = event.value.myApplicationStatus ? await resolveMyApplicationId() : null;
+}
+
+/** El detalle del evento solo trae el estado de mi postulación, no su id: lo buscamos aparte. */
+async function resolveMyApplicationId() {
+  const mine = await EventApplicationService.listMine();
+  return mine.find(a => a.eventId === Number(route.params.id))?.id ?? null;
 }
 
 async function handleApply() {
@@ -118,6 +121,13 @@ async function handleApply() {
 
 async function handleWithdraw() {
   try {
+    // Sin id no hay nada que retirar: mandarlo igual arma /applications/null/withdraw,
+    // que la restricción {appId:int} responde con un 404.
+    if (myApplicationId === null) myApplicationId = await resolveMyApplicationId();
+    if (myApplicationId === null) {
+      toast.error(t('common.error'));
+      return;
+    }
     await EventApplicationService.withdraw(event.value.id, myApplicationId);
     toast.success(t('events.withdrawSuccess'));
     await load();

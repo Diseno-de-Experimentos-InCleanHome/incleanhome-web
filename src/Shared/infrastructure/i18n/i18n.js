@@ -17,6 +17,8 @@ const messages = {
       applications: "Postulaciones",
       menu: "Menú",
       language: "Idioma",
+      claims: "Libro de reclamaciones",
+      memberships: "Membresías",
     },
     auth: {
       login: "Iniciar sesión",
@@ -253,6 +255,8 @@ const messages = {
       applications: "Applications",
       menu: "Menu",
       language: "Language",
+      claims: "Claims book",
+      memberships: "Memberships",
     },
     auth: {
       login: "Login",

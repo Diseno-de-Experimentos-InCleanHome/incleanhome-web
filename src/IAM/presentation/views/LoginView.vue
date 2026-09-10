@@ -42,6 +42,8 @@
         <router-link to="/terms" class="legal-link">{{ t('auth.terms') }}</router-link>
         <span class="legal-sep">·</span>
         <router-link to="/privacy" class="legal-link">{{ t('auth.privacy') }}</router-link>
+        <span class="legal-sep">·</span>
+        <router-link to="/reclamos" class="legal-link">Libro de reclamaciones</router-link>
       </div>
     </div>
   </div>
@@ -52,6 +54,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { AuthenticationService } from "../../application/authentication.service.js";
+import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -79,7 +82,11 @@ async function handleLogin() {
       router.push("/2fa-setup");
       return;
     }
-    router.push(result.user.role === "worker" ? "/worker/dashboard" : "/client/search");
+    if (result.membershipPending) {
+      router.push("/membership-pending");
+      return;
+    }
+    router.push(roleHomePath(result.user.role));
   } catch (e) {
     error.value = e.response?.data?.error || t('common.error');
   } finally {

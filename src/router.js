@@ -8,6 +8,7 @@
  */
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "./IAM/application/auth.store.js";
+import { roleHomePath } from "./Shared/domain/constants/roles.js";
 
 const routes = [
   // ──────────────────────────────────────────────────
@@ -21,6 +22,11 @@ const routes = [
   { path: "/2fa-verify",       component: () => import("./IAM/presentation/views/TwoFactorVerifyView.vue"), meta: { public: true } },
   { path: "/terms",            component: () => import("./Shared/presentation/views/TermsView.vue"),        meta: { public: true } },
   { path: "/privacy",          component: () => import("./Shared/presentation/views/PrivacyView.vue"),      meta: { public: true } },
+  { path: "/membership-pending", component: () => import("./Memberships/presentation/views/MembershipPendingView.vue"), meta: { public: true } },
+
+  // Libro de reclamaciones — público, no requiere sesión
+  { path: "/reclamos",             component: () => import("./Claims/presentation/views/ClaimsBookView.vue"), meta: { public: true } },
+  { path: "/reclamos/seguimiento", component: () => import("./Claims/presentation/views/ClaimTrackView.vue"), meta: { public: true } },
 
   // ──────────────────────────────────────────────────
   // Rutas de CLIENTE
@@ -85,6 +91,24 @@ const routes = [
       { path: "messages/:userId", component: () => import("./Shared/presentation/views/ChatView.vue") },
     ],
   },
+
+  // ──────────────────────────────────────────────────
+  // Rutas de ADMIN
+  // ──────────────────────────────────────────────────
+  {
+    path: "/admin",
+    component: () => import("./Shared/presentation/layouts/AdminLayout.vue"),
+    meta: { requiresAuth: true, role: "admin" },
+    children: [
+      { path: "", redirect: "/admin/memberships" },
+
+      // Memberships
+      { path: "memberships", component: () => import("./Memberships/presentation/views/AdminMembershipsView.vue") },
+
+      // Claims
+      { path: "claims", component: () => import("./Claims/presentation/views/AdminClaimsView.vue") },
+    ],
+  },
 ];
 
 const router = createRouter({
@@ -100,7 +124,7 @@ router.beforeEach((to) => {
 
   if (to.meta.public) {
     if (auth.isLoggedIn && to.path === "/login") {
-      return auth.user?.role === "worker" ? "/worker/dashboard" : "/client/search";
+      return roleHomePath(auth.user?.role);
     }
     return true;
   }
@@ -108,7 +132,7 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth) {
     if (!auth.isLoggedIn) return "/login";
     if (to.meta.role && auth.user?.role !== to.meta.role) {
-      const target = auth.user?.role === "worker" ? "/worker/dashboard" : "/client/search";
+      const target = roleHomePath(auth.user?.role);
       if (to.path === target) { auth.clearAuth(); return "/login"; }
       return target;
     }

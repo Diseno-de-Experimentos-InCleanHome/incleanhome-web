@@ -23,6 +23,10 @@ export const useAuthStore = defineStore("auth", () => {
   // it must never be persisted like the real session token.
   const challengeToken = ref(null);
 
+  // Set when a worker login/registration comes back with membershipPending — read once
+  // by MembershipPendingView and not persisted (there's no session to persist yet).
+  const membershipMessage = ref(null);
+
   const isLoggedIn = computed(() => !!token.value && !!user.value);
 
   function setAuth(userData, tokenData) {
@@ -54,6 +58,14 @@ export const useAuthStore = defineStore("auth", () => {
     challengeToken.value = null;
   }
 
+  function setMembershipPending(payload) {
+    membershipMessage.value = payload;
+  }
+
+  function clearMembershipPending() {
+    membershipMessage.value = null;
+  }
+
   // On load, if a persisted token exists, we apply it to the HTTP client.
   if (token.value) {
     apiClient.defaults.headers.common["Authorization"] = `Bearer ${token.value}`;
@@ -62,5 +74,6 @@ export const useAuthStore = defineStore("auth", () => {
   return {
     user, token, isLoggedIn, setAuth, clearAuth, updateUser,
     challengeToken, setChallengeToken, clearChallengeToken,
+    membershipMessage, setMembershipPending, clearMembershipPending,
   };
 });

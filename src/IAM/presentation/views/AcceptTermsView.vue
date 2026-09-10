@@ -28,6 +28,7 @@ import { marked } from "marked";
 import { useAuthStore } from "../../application/auth.store.js";
 import { AuthenticationService } from "../../application/authentication.service.js";
 import { CURRENT_TERMS_VERSION } from "../../../Shared/domain/constants/terms.js";
+import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -63,8 +64,10 @@ async function handleAccept() {
       router.push("/2fa-verify");
     } else if (result.requires2faSetup) {
       router.push("/2fa-setup");
+    } else if (result.membershipPending) {
+      router.push("/membership-pending");
     } else {
-      router.push(result.user.role === "worker" ? "/worker/dashboard" : "/client/search");
+      router.push(roleHomePath(result.user.role));
     }
   } catch (e) {
     error.value = e.response?.data?.error || t('common.error');
