@@ -21,36 +21,42 @@
         <div class="grid-2-cols">
           <div class="form-group">
             <label class="label-bold">{{ t('auth.name') }}</label>
-            <input v-model="form.name" class="input-field" />
+            <input v-model="form.name" :class="['input-field', { 'input-error': errors.name }]" :maxlength="LIMITS.nameMax" @blur="touch('name')" />
+            <p v-if="errors.name" class="field-error">{{ errors.name }}</p>
           </div>
           <div class="form-group">
             <label class="label-bold">{{ t('auth.phone') }}</label>
-            <input v-model="form.phone" class="input-field" />
+            <input v-model="form.phone" type="tel" :class="['input-field', { 'input-error': errors.phone }]" inputmode="numeric" maxlength="12" @keypress="blockNonDigits" @blur="touch('phone')" />
+            <p v-if="errors.phone" class="field-error">{{ errors.phone }}</p>
           </div>
         </div>
         <div class="grid-2-cols">
           <div class="form-group">
             <label class="label-bold">{{ t('worker.age') }}</label>
-            <input v-model.number="form.age" type="number" class="input-field" min="18" max="70" />
+            <input v-model.number="form.age" type="number" :class="['input-field', { 'input-error': errors.age }]" :min="LIMITS.ageMin" :max="LIMITS.ageMax" @blur="touch('age')" />
+            <p v-if="errors.age" class="field-error">{{ errors.age }}</p>
           </div>
           <div class="form-group">
             <label class="label-bold">{{ t('worker.experienceYears') }}</label>
-            <input v-model.number="form.experienceYears" type="number" class="input-field" min="0" />
+            <input v-model.number="form.experienceYears" type="number" :class="['input-field', { 'input-error': errors.experienceYears }]" :min="LIMITS.experienceMin" :max="LIMITS.experienceMax" @blur="touch('experienceYears')" />
+            <p v-if="errors.experienceYears" class="field-error">{{ errors.experienceYears }}</p>
           </div>
         </div>
         <div class="form-group">
           <label class="label-bold">{{ t('worker.hourlyRate') }}</label>
-          <input v-model.number="form.hourlyRate" type="number" class="input-field input-small" min="10" step="5" />
+          <input v-model.number="form.hourlyRate" type="number" :class="['input-field', 'input-small', { 'input-error': errors.hourlyRate }]" :min="LIMITS.hourlyRateMin" step="5" @blur="touch('hourlyRate')" />
+          <p v-if="errors.hourlyRate" class="field-error">{{ errors.hourlyRate }}</p>
         </div>
         <div class="grid-2-cols">
           <div class="form-group">
             <label class="label-bold">{{ t('worker.serviceTypes') }}</label>
             <div class="checkbox-list">
               <label v-for="svc in serviceOptions" :key="svc.value" class="checkbox-item">
-                <input type="checkbox" :value="svc.value" v-model="form.serviceTypes" class="checkbox-input" />
+                <input type="checkbox" :value="svc.value" v-model="form.serviceTypes" class="checkbox-input" @change="touch('serviceTypes')" />
                 <span class="svc-label">{{ svc.label }}</span>
               </label>
             </div>
+            <p v-if="errors.serviceTypes" class="field-error">{{ errors.serviceTypes }}</p>
           </div>
           <div class="form-group">
             <label class="label-bold">{{ t('worker.zonesLabel') }}</label>
@@ -64,7 +70,8 @@
         </div>
         <div class="form-group">
           <label class="label-bold">{{ t('worker.bio') }}</label>
-           <textarea v-model="form.bio" class="input-field no-resize" rows="4"></textarea>
+           <textarea v-model="form.bio" :class="['input-field', 'no-resize', { 'input-error': errors.bio }]" rows="4" :maxlength="LIMITS.bioMax" @blur="touch('bio')"></textarea>
+           <p v-if="errors.bio" class="field-error">{{ errors.bio }}</p>
         </div>
 
         <div v-if="success" class="alert success-box"><AppIcon name="check" :size="15" /> Perfil actualizado</div>
@@ -87,6 +94,11 @@ import { WorkerProfileService } from "../../application/worker-profile.service.j
 import { buildServiceOptions } from "../../../Shared/domain/constants/services.js";
 import { buildZoneOptions } from "../../../Shared/domain/constants/zones.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import {
+  LIMITS, required, minLength, maxLength, personName, peruPhone,
+  integer, numeric, min, max, minItems, blockNonDigits,
+} from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t } = useI18n();
 const auth = useAuthStore();
@@ -101,7 +113,27 @@ const initials = computed(() => (auth.user?.name || "W").split(" ").map(n => n[0
 const serviceOptions = computed(() => buildServiceOptions(t));
 const zoneOptions = computed(() => buildZoneOptions(t));
 
+const schema = computed(() => {
+  const req = required(t('validation.required'));
+  return {
+    name: [
+      required(t('validation.nameRequired')),
+      minLength(LIMITS.nameMin, t('validation.minLength', { n: LIMITS.nameMin })),
+      maxLength(LIMITS.nameMax, t('validation.maxLength', { n: LIMITS.nameMax })),
+      personName(t('validation.personName')),
+    ],
+    phone: [peruPhone(t('validation.peruPhone'))],
+    age: [req, integer(t('validation.integer')), min(LIMITS.ageMin, t('validation.min', { n: LIMITS.ageMin })), max(LIMITS.ageMax, t('validation.max', { n: LIMITS.ageMax }))],
+    experienceYears: [integer(t('validation.integer')), min(LIMITS.experienceMin, t('validation.min', { n: LIMITS.experienceMin })), max(LIMITS.experienceMax, t('validation.max', { n: LIMITS.experienceMax }))],
+    hourlyRate: [req, numeric(t('validation.numeric')), min(LIMITS.hourlyRateMin, t('validation.min', { n: LIMITS.hourlyRateMin }))],
+    serviceTypes: [minItems(1, t('validation.serviceTypesRequired'))],
+    bio: [maxLength(LIMITS.bioMax, t('validation.maxLength', { n: LIMITS.bioMax }))],
+  };
+});
+const { errors, touch, validateAll } = useFormValidation(form, schema);
+
 async function save() {
+  if (!validateAll()) return;
   saving.value = true;
   error.value = "";
   try {

@@ -26,7 +26,7 @@
             <router-link to="/reclamos/seguimiento" class="link-primary">¿Ya tienes un código?</router-link>
           </p>
 
-          <form @submit.prevent="handleSubmit" class="form">
+          <form @submit.prevent="handleSubmit" class="form" novalidate>
             <div class="type-toggle">
               <button type="button" :class="['type-btn', form.type === 'reclamo' ? 'type-selected' : '']" @click="form.type = 'reclamo'">Reclamo</button>
               <button type="button" :class="['type-btn', form.type === 'queja' ? 'type-selected' : '']" @click="form.type = 'queja'">Queja</button>
@@ -35,34 +35,41 @@
             <div class="form-grid">
               <div class="form-group">
                 <label class="label">Nombre completo</label>
-                <input v-model="form.consumerName" type="text" class="input-field" required />
+                <input v-model="form.consumerName" type="text" :class="['input-field', { 'input-error': errors.consumerName }]" required :maxlength="LIMITS.nameMax" @blur="touch('consumerName')" />
+                <p v-if="errors.consumerName" class="field-error">{{ errors.consumerName }}</p>
               </div>
               <div class="form-group">
                 <label class="label">DNI / documento</label>
-                <input v-model="form.consumerDocument" type="text" class="input-field" />
+                <input v-model="form.consumerDocument" type="text" :class="['input-field', { 'input-error': errors.consumerDocument }]" inputmode="numeric" maxlength="12" @keypress="blockNonDigits" @blur="touch('consumerDocument')" />
+                <p v-if="errors.consumerDocument" class="field-error">{{ errors.consumerDocument }}</p>
               </div>
             </div>
             <div class="form-grid">
               <div class="form-group">
                 <label class="label">Correo</label>
-                <input v-model="form.consumerEmail" type="email" class="input-field" required />
+                <input v-model="form.consumerEmail" type="email" :class="['input-field', { 'input-error': errors.consumerEmail }]" required :maxlength="LIMITS.emailMax" @blur="touch('consumerEmail')" />
+                <p v-if="errors.consumerEmail" class="field-error">{{ errors.consumerEmail }}</p>
               </div>
               <div class="form-group">
                 <label class="label">Teléfono</label>
-                <input v-model="form.consumerPhone" type="tel" class="input-field" />
+                <input v-model="form.consumerPhone" type="tel" :class="['input-field', { 'input-error': errors.consumerPhone }]" inputmode="numeric" maxlength="12" @keypress="blockNonDigits" @blur="touch('consumerPhone')" />
+                <p v-if="errors.consumerPhone" class="field-error">{{ errors.consumerPhone }}</p>
               </div>
             </div>
             <div class="form-group">
               <label class="label">Servicio relacionado (opcional)</label>
-              <input v-model="form.relatedService" type="text" class="input-field" placeholder="Ej. Limpieza del 03/09/2026" />
+              <input v-model="form.relatedService" type="text" :class="['input-field', { 'input-error': errors.relatedService }]" placeholder="Ej. Limpieza del 03/09/2026" :maxlength="LIMITS.relatedServiceMax" @blur="touch('relatedService')" />
+              <p v-if="errors.relatedService" class="field-error">{{ errors.relatedService }}</p>
             </div>
             <div class="form-group">
               <label class="label">Detalle del {{ form.type }}</label>
-              <textarea v-model="form.description" class="input-field no-resize" rows="4" required></textarea>
+              <textarea v-model="form.description" :class="['input-field', 'no-resize', { 'input-error': errors.description }]" rows="4" required :maxlength="LIMITS.claimDescriptionMax" @blur="touch('description')"></textarea>
+              <p v-if="errors.description" class="field-error">{{ errors.description }}</p>
             </div>
             <div class="form-group">
               <label class="label">¿Qué solicitas? (opcional)</label>
-              <textarea v-model="form.consumerRequest" class="input-field no-resize" rows="2"></textarea>
+              <textarea v-model="form.consumerRequest" :class="['input-field', 'no-resize', { 'input-error': errors.consumerRequest }]" rows="2" :maxlength="LIMITS.claimRequestMax" @blur="touch('consumerRequest')"></textarea>
+              <p v-if="errors.consumerRequest" class="field-error">{{ errors.consumerRequest }}</p>
             </div>
 
             <div v-if="error" class="error-box">{{ error }}</div>
@@ -82,6 +89,11 @@ import { ref, computed } from "vue";
 import { useAuthStore } from "../../../IAM/application/auth.store.js";
 import { ClaimsApi } from "../../infrastructure/claims.api.js";
 import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import {
+  LIMITS, required, minLength, maxLength, personName, email, peruPhone,
+  document as documentNumber, blockNonDigits,
+} from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const auth = useAuthStore();
 const homeLink = computed(() => (auth.isLoggedIn ? roleHomePath(auth.user?.role) : "/login"));
@@ -104,7 +116,19 @@ const loading = ref(false);
 const error = ref("");
 const createdCode = ref("");
 
+const schema = {
+  consumerName: [required(), minLength(LIMITS.nameMin), maxLength(LIMITS.nameMax), personName()],
+  consumerDocument: [documentNumber()],
+  consumerEmail: [required(), email(), maxLength(LIMITS.emailMax)],
+  consumerPhone: [peruPhone()],
+  relatedService: [maxLength(LIMITS.relatedServiceMax)],
+  description: [required(), maxLength(LIMITS.claimDescriptionMax)],
+  consumerRequest: [maxLength(LIMITS.claimRequestMax)],
+};
+const { errors, touch, validateAll, resetErrors } = useFormValidation(form, schema);
+
 async function handleSubmit() {
+  if (!validateAll()) return;
   loading.value = true;
   error.value = "";
   try {
@@ -120,6 +144,7 @@ async function handleSubmit() {
 function resetForm() {
   createdCode.value = "";
   form.value = emptyForm();
+  resetErrors();
 }
 </script>
 

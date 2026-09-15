@@ -27,6 +27,7 @@
     <div class="chat-input mt-3 pt-3">
       <input
         v-model="newMessage"
+        maxlength="1000"
         @keyup.enter="sendMessage"
         class="input-field chat-input-field"
         :placeholder="t('messages.typeMessage')" />

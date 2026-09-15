@@ -33,7 +33,7 @@
         <div v-if="m.adminNote" class="note-box">{{ m.adminNote }}</div>
 
         <div class="review-box">
-          <textarea v-model="notes[m.workerId]" class="input-field no-resize" rows="2" placeholder="Nota (opcional)"></textarea>
+          <textarea v-model="notes[m.workerId]" class="input-field no-resize" rows="2" maxlength="1000" placeholder="Nota (opcional)"></textarea>
           <div class="action-buttons">
             <button v-if="m.status !== 'rejected'" @click="review(m.workerId, 'rejected')" class="btn btn-danger btn-sm" :disabled="submitting === m.workerId">Rechazar</button>
             <button v-if="m.status !== 'pending'" @click="review(m.workerId, 'pending')" class="btn btn-secondary btn-sm" :disabled="submitting === m.workerId">Volver a pendiente</button>

@@ -18,9 +18,10 @@
 
       <div class="card">
         <label class="label-bold">{{ t('booking.serviceType') }}</label>
-        <select v-model="form.serviceType" class="input-field mt-1">
+        <select v-model="form.serviceType" :class="['input-field', 'mt-1', { 'input-error': errors.serviceType }]" @change="touch('serviceType')">
           <option v-for="svc in worker?.serviceTypes || []" :key="svc" :value="svc">{{ t(`worker.services.${svc}`) }}</option>
         </select>
+        <p v-if="errors.serviceType" class="field-error">{{ errors.serviceType }}</p>
       </div>
 
       <div class="card">
@@ -42,18 +43,20 @@
             </button>
           </div>
         </div>
+        <p v-if="errors.date" class="field-error">{{ errors.date }}</p>
         <div class="grid-2-cols gap-3 mt-4">
           <div class="form-group">
             <label class="label-bold">{{ t('booking.startTime') }}</label>
-            <select v-model="form.startTime" class="input-field" @change="calcHours">
+            <select v-model="form.startTime" :class="['input-field', { 'input-error': errors.startTime }]" @change="calcHours(); touch('endTime')">
               <option v-for="h in timeSlots" :key="h" :value="h">{{ h }}</option>
             </select>
           </div>
           <div class="form-group">
             <label class="label-bold">{{ t('booking.endTime') }}</label>
-            <select v-model="form.endTime" class="input-field" @change="calcHours">
+            <select v-model="form.endTime" :class="['input-field', { 'input-error': errors.endTime }]" @change="calcHours(); touch('endTime')">
               <option v-for="h in timeSlots" :key="h" :value="h">{{ h }}</option>
             </select>
+            <p v-if="errors.endTime" class="field-error">{{ errors.endTime }}</p>
           </div>
         </div>
         <div v-if="form.hours > 0" class="hours-info">{{ form.hours }} {{ t('booking.hours') }}</div>
@@ -61,9 +64,11 @@
 
       <div class="card">
         <label class="label-bold">{{ t('booking.address') }}</label>
-        <input v-model="form.address" type="text" class="input-field mt-1" :placeholder="t('booking.address')" />
+        <input v-model="form.address" type="text" :class="['input-field', 'mt-1', { 'input-error': errors.address }]" :placeholder="t('booking.address')" :maxlength="LIMITS.addressMax" @blur="touch('address')" />
+        <p v-if="errors.address" class="field-error">{{ errors.address }}</p>
         <label class="label-bold mt-label">{{ t('booking.notes') }}</label>
-        <textarea v-model="form.notes" class="input-field mt-1 no-resize" rows="2"></textarea>
+        <textarea v-model="form.notes" :class="['input-field', 'mt-1', 'no-resize', { 'input-error': errors.notes }]" rows="2" :maxlength="LIMITS.bookingNotesMax" @blur="touch('notes')"></textarea>
+        <p v-if="errors.notes" class="field-error">{{ errors.notes }}</p>
       </div>
 
       <div class="card summary-card">
@@ -81,7 +86,7 @@
 
       <div v-if="error" class="alert error-box">{{ error }}</div>
 
-      <button @click="handleBook" class="btn btn-primary btn-full btn-lg mt-4" :disabled="!canBook || submitting">
+      <button @click="handleBook" class="btn btn-primary btn-full btn-lg mt-4" :disabled="submitting">
         <div v-if="submitting" class="spinner spinner-sm"></div>
         {{ submitting ? t('common.loading') : t('booking.confirm') }}
       </button>
@@ -98,6 +103,8 @@ import { BookingService } from "../../application/booking.service.js";
 import { BookingPricingService } from "../../domain/services/booking-pricing.service.js";
 import { CatalogService } from "../../../SearchAndCatalog/application/catalog.service.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import { LIMITS, required, maxLength, notPast, timeAfter } from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -118,7 +125,22 @@ const form = ref({ serviceType: "", startTime: "08:00", endTime: "10:00", addres
 
 const initials = computed(() => worker.value?.name?.split(" ").map(n => n[0]).slice(0,2).join("").toUpperCase() || "?");
 const totalAmount = computed(() => BookingPricingService.calculateTotal(worker.value?.hourlyRate || 0, form.value.hours));
-const canBook = computed(() => selectedDay.value && form.value.serviceType && form.value.address && form.value.hours > 0);
+const selectedDate = computed(() => selectedDay.value
+  ? `${viewYear.value}-${String(viewMonth.value+1).padStart(2,"0")}-${String(selectedDay.value).padStart(2,"0")}`
+  : "");
+
+const schema = computed(() => {
+  const req = required(t('validation.required'));
+  const len = (n) => maxLength(n, t('validation.maxLength', { n }));
+  return {
+    serviceType: [req],
+    date: [required(t('validation.dateRequired')), notPast(t('validation.notPast'))],
+    endTime: [req, timeAfter("startTime", t('validation.timeAfter'))],
+    address: [req, len(LIMITS.addressMax)],
+    notes: [len(LIMITS.bookingNotesMax)],
+  };
+});
+const { errors, touch, validateAll } = useFormValidation(computed(() => ({ ...form.value, date: selectedDate.value })), schema);
 
 const monthLabel = computed(() => new Date(viewYear.value, viewMonth.value).toLocaleDateString("es-PE", { month:"long", year:"numeric" }));
 const daysInMonth = computed(() => new Date(viewYear.value, viewMonth.value + 1, 0).getDate());
@@ -127,7 +149,7 @@ const timeSlots = Array.from({ length: 18 }, (_, i) => `${String(Math.floor(i + 
 
 function prevMonth() { if (viewMonth.value === 0) { viewMonth.value = 11; viewYear.value--; } else viewMonth.value--; }
 function nextMonth() { if (viewMonth.value === 11) { viewMonth.value = 0; viewYear.value++; } else viewMonth.value++; }
-function selectDay(d) { selectedDay.value = d; }
+function selectDay(d) { selectedDay.value = d; touch('date'); }
 function isPast(d) {
   const date = new Date(viewYear.value, viewMonth.value, d);
   return date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -138,10 +160,11 @@ function calcHours() {
   form.value.hours = Math.max(0, (eh * 60 + em - sh * 60 - sm) / 60);
 }
 async function handleBook() {
+  if (!validateAll()) return;
   submitting.value = true;
   error.value = "";
   try {
-    const dateStr = `${viewYear.value}-${String(viewMonth.value+1).padStart(2,"0")}-${String(selectedDay.value).padStart(2,"0")}`;
+    const dateStr = selectedDate.value;
     await BookingService.create({
       workerId: parseInt(route.params.id),
       serviceType: form.value.serviceType,

@@ -36,48 +36,55 @@
         <div v-else-if="step === 2" class="card card-elevated">
           <button @click="step = 1" class="back-btn">← {{ t('common.back') }}</button>
           <h2 class="card-title">{{ selectedRole === 'client' ? t('auth.client') : t('auth.worker') }} — {{ t('auth.registerTitle') }}</h2>
-          <form @submit.prevent="handleRegister" class="auth-form">
+          <form @submit.prevent="handleRegister" class="auth-form" novalidate>
             <div class="form-grid">
               <div class="form-group">
                 <label class="label">{{ t('auth.name') }}</label>
-                <input v-model="form.name" type="text" class="input-field" required />
+                <input v-model="form.name" type="text" :class="['input-field', { 'input-error': errors.name }]" required :maxlength="LIMITS.nameMax" @blur="touch('name')" />
+                <p v-if="errors.name" class="field-error">{{ errors.name }}</p>
               </div>
               <div class="form-group">
                 <label class="label">{{ t('auth.phone') }}</label>
-                <input v-model="form.phone" type="tel" class="input-field" placeholder="+51 999 999 999" />
+                <input v-model="form.phone" type="tel" :class="['input-field', { 'input-error': errors.phone }]" placeholder="999999999" inputmode="numeric" maxlength="12" @keypress="blockNonDigits" @blur="touch('phone')" />
+                <p v-if="errors.phone" class="field-error">{{ errors.phone }}</p>
               </div>
             </div>
             <div class="form-group">
               <label class="label">{{ t('auth.email') }}</label>
-              <input v-model="form.email" type="email" class="input-field" required />
+              <input v-model="form.email" type="email" :class="['input-field', { 'input-error': errors.email }]" required :maxlength="LIMITS.emailMax" @blur="touch('email')" />
+              <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
             </div>
             <div class="form-group">
               <label class="label">{{ t('auth.password') }} <span class="hint-text">({{ t('auth.minPassword') }})</span></label>
-              <input v-model="form.password" type="password" class="input-field" required minlength="8" />
+              <input v-model="form.password" type="password" :class="['input-field', { 'input-error': errors.password }]" required minlength="8" @blur="touch('password')" />
+              <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
             </div>
             <template v-if="selectedRole === 'worker'">
               <div class="form-grid">
                 <div class="form-group">
                   <label class="label">{{ t('worker.age') }}</label>
-                  <input v-model.number="form.age" type="number" class="input-field" required min="18" max="70" />
+                  <input v-model.number="form.age" type="number" :class="['input-field', { 'input-error': errors.age }]" required :min="LIMITS.ageMin" :max="LIMITS.ageMax" @blur="touch('age')" />
+                  <p v-if="errors.age" class="field-error">{{ errors.age }}</p>
                 </div>
                 <div class="form-group">
                   <label class="label">{{ t('worker.gender') }}</label>
-                  <select v-model="form.gender" class="input-field" required>
+                  <select v-model="form.gender" :class="['input-field', { 'input-error': errors.gender }]" required @change="touch('gender')">
                     <option value="female">{{ t('worker.female') }}</option>
                     <option value="male">{{ t('worker.male') }}</option>
                     <option value="other">{{ t('worker.other') }}</option>
                   </select>
+                  <p v-if="errors.gender" class="field-error">{{ errors.gender }}</p>
                 </div>
               </div>
               <div class="form-group">
                 <label class="label">{{ t('worker.serviceTypes') }}</label>
                 <div class="checkbox-group mt-1">
                   <label v-for="svc in serviceOptions" :key="svc.value" class="checkbox-label">
-                    <input type="checkbox" :value="svc.value" v-model="form.serviceTypes" />
+                    <input type="checkbox" :value="svc.value" v-model="form.serviceTypes" @change="touch('serviceTypes')" />
                     <span class="svc-label">{{ svc.label }}</span>
                   </label>
                 </div>
+                <p v-if="errors.serviceTypes" class="field-error">{{ errors.serviceTypes }}</p>
               </div>
               <div class="form-group">
                 <label class="label">{{ t('worker.zonesLabel') }}</label>
@@ -91,16 +98,19 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label class="label">{{ t('worker.hourlyRate') }}</label>
-                  <input v-model.number="form.hourlyRate" type="number" class="input-field" required min="10" step="5" />
+                  <input v-model.number="form.hourlyRate" type="number" :class="['input-field', { 'input-error': errors.hourlyRate }]" required :min="LIMITS.hourlyRateMin" step="5" @blur="touch('hourlyRate')" />
+                  <p v-if="errors.hourlyRate" class="field-error">{{ errors.hourlyRate }}</p>
                 </div>
                 <div class="form-group">
                   <label class="label">{{ t('worker.experienceYears') }}</label>
-                  <input v-model.number="form.experienceYears" type="number" class="input-field" min="0" max="50" />
+                  <input v-model.number="form.experienceYears" type="number" :class="['input-field', { 'input-error': errors.experienceYears }]" :min="LIMITS.experienceMin" :max="LIMITS.experienceMax" @blur="touch('experienceYears')" />
+                  <p v-if="errors.experienceYears" class="field-error">{{ errors.experienceYears }}</p>
                 </div>
               </div>
               <div class="form-group">
                 <label class="label">{{ t('worker.bio') }}</label>
-                <textarea v-model="form.bio" class="input-field no-resize" rows="2"></textarea>
+                <textarea v-model="form.bio" :class="['input-field', 'no-resize', { 'input-error': errors.bio }]" rows="2" :maxlength="LIMITS.bioMax" @blur="touch('bio')"></textarea>
+                <p v-if="errors.bio" class="field-error">{{ errors.bio }}</p>
               </div>
             </template>
             <label class="checkbox-label terms-checkbox">
@@ -132,6 +142,11 @@ import { buildServiceOptions } from "../../../Shared/domain/constants/services.j
 import { buildZoneOptions } from "../../../Shared/domain/constants/zones.js";
 import { CURRENT_TERMS_VERSION } from "../../../Shared/domain/constants/terms.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import {
+  LIMITS, required, minLength, maxLength, personName, email, peruPhone,
+  strongPassword, integer, numeric, min, max, minItems, blockNonDigits,
+} from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -153,17 +168,40 @@ const form = ref({
   hourlyRate: 25, experienceYears: 1, bio: "",
 });
 
+const schema = computed(() => {
+  const req = required(t('validation.required'));
+  const len = (n) => maxLength(n, t('validation.maxLength', { n }));
+  const base = {
+    name: [req, minLength(LIMITS.nameMin, t('validation.minLength', { n: LIMITS.nameMin })), len(LIMITS.nameMax), personName(t('validation.personName'))],
+    phone: [peruPhone(t('validation.peruPhone'))],
+    email: [req, email(t('validation.email')), len(LIMITS.emailMax)],
+    password: [req, strongPassword(t('validation.strongPassword'))],
+  };
+  if (selectedRole.value !== "worker") return base;
+  return {
+    ...base,
+    age: [req, integer(t('validation.integer')), min(LIMITS.ageMin, t('validation.min', { n: LIMITS.ageMin })), max(LIMITS.ageMax, t('validation.max', { n: LIMITS.ageMax }))],
+    gender: [req],
+    serviceTypes: [minItems(1, t('validation.serviceTypesRequired'))],
+    hourlyRate: [req, numeric(t('validation.numeric')), min(LIMITS.hourlyRateMin, t('validation.min', { n: LIMITS.hourlyRateMin }))],
+    experienceYears: [integer(t('validation.integer')), min(LIMITS.experienceMin, t('validation.min', { n: LIMITS.experienceMin })), max(LIMITS.experienceMax, t('validation.max', { n: LIMITS.experienceMax }))],
+    bio: [len(LIMITS.bioMax)],
+  };
+});
+const { errors, touch, validateAll, resetErrors } = useFormValidation(form, schema);
+
 function toggleLang() { locale.value = locale.value === "es" ? "en" : "es"; }
-function selectRole(role) { selectedRole.value = role; }
+function selectRole(role) {
+  selectedRole.value = role;
+  resetErrors();
+}
 
 const serviceOptions = computed(() => buildServiceOptions(t));
 const zoneOptions = computed(() => buildZoneOptions(t));
 
 async function handleRegister() {
-  if (selectedRole.value === "worker" && form.value.serviceTypes.length === 0) {
-    error.value = "Selecciona al menos un tipo de servicio";
-    return;
-  }
+  error.value = "";
+  if (!validateAll()) return;
   if (!acceptedTerms.value) {
     error.value = t('auth.mustAcceptTerms');
     return;

@@ -5,7 +5,7 @@
 
     <div class="card">
       <div class="day-list">
-        <div v-for="(day, index) in days" :key="index" class="day-row">
+        <div v-for="(day, index) in days" :key="index" :class="['day-row', { 'day-row-error': slotErrors[index] }]">
           <div class="day-toggle-container">
             <!-- Toggle -->
             <button @click="toggleDay(index)"
@@ -16,15 +16,16 @@
           </div>
 
           <div v-if="slots[index]?.isAvailable" class="time-select-container">
-            <select v-model="slots[index].startTime" class="input-field time-select">
+            <select v-model="slots[index].startTime" :class="['input-field', 'time-select', { 'input-error': slotErrors[index] }]" @change="touchSlot(index)">
               <option v-for="h in timeSlots" :key="h" :value="h">{{ h }}</option>
             </select>
             <span class="until-text">hasta</span>
-            <select v-model="slots[index].endTime" class="input-field time-select">
+            <select v-model="slots[index].endTime" :class="['input-field', 'time-select', { 'input-error': slotErrors[index] }]" @change="touchSlot(index)">
               <option v-for="h in timeSlots" :key="h" :value="h">{{ h }}</option>
             </select>
           </div>
           <div v-else class="unavailable-text">No disponible</div>
+          <p v-if="slotErrors[index]" class="field-error slot-error">{{ slotErrors[index] }}</p>
         </div>
       </div>
 
@@ -44,6 +45,7 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../../IAM/application/auth.store.js";
 import { useToastStore } from "../../../Shared/application/toast.store.js";
 import { AvailabilityService } from "../../application/availability.service.js";
+import { required, timeAfter, validateField } from "../../../Shared/domain/validation/validators.js";
 
 const { t } = useI18n();
 const auth = useAuthStore();
@@ -54,12 +56,33 @@ const timeSlots = Array.from({ length: 17 }, (_, i) => `${String(i + 6).padStart
 const saving = ref(false);
 const error = ref("");
 const slots = ref([]);
+const slotErrors = ref({});
+
+// Only days marked as available are validated; a disabled day keeps whatever times it had.
+const slotSchema = {
+  startTime: [required()],
+  endTime: [required(), timeAfter("startTime")],
+};
+
+function slotError(slot) {
+  if (!slot?.isAvailable) return null;
+  return validateField(slot, slotSchema, "startTime") || validateField(slot, slotSchema, "endTime");
+}
+
+function touchSlot(index) {
+  const message = slotError(slots.value[index]);
+  if (message) slotErrors.value[index] = message;
+  else delete slotErrors.value[index];
+}
 
 async function toggleDay(index) {
   slots.value[index].isAvailable = !slots.value[index].isAvailable;
+  touchSlot(index);
 }
 
 async function saveAvailability() {
+  slots.value.forEach((_, index) => touchSlot(index));
+  if (Object.keys(slotErrors.value).length) return;
   saving.value = true;
   error.value = "";
   try {
@@ -105,6 +128,8 @@ onMounted(async () => {
   .day-row { flex-wrap: nowrap; }
 }
 .day-row:last-child { border-bottom:none; }
+.day-row-error { flex-wrap: wrap; }
+.slot-error { flex-basis: 100%; margin-top: -0.5rem; }
 
 .day-toggle-container {
   display: flex;

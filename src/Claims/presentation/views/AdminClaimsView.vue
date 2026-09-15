@@ -30,7 +30,7 @@
         <div v-if="c.consumerRequest" class="request-box"><strong>Solicita:</strong> {{ c.consumerRequest }}</div>
 
         <div class="review-box">
-          <textarea v-model="notes[c.id]" class="input-field no-resize" rows="2" placeholder="Nota del admin (opcional)"></textarea>
+          <textarea v-model="notes[c.id]" class="input-field no-resize" rows="2" maxlength="1000" placeholder="Nota del admin (opcional)"></textarea>
           <div class="action-buttons">
             <select v-model="targetStatus[c.id]" class="input-field status-select">
               <option value="in_review">En revisión</option>

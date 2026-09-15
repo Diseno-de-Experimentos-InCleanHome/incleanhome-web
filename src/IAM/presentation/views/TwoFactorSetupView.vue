@@ -26,14 +26,17 @@
             maxlength="6"
             inputmode="numeric"
             autocomplete="one-time-code"
-            class="input-field code-input"
+            :class="['input-field', 'code-input', { 'input-error': errors.code }]"
+            @keypress="blockNonDigits"
+            @blur="touch('code')"
             placeholder="000000"
           />
+          <p v-if="errors.code" class="field-error">{{ errors.code }}</p>
         </div>
 
         <div v-if="error" class="error-box">{{ error }}</div>
 
-        <button @click="handleEnable" class="btn btn-primary btn-full btn-lg submit-btn" :disabled="submitting || code.length !== 6">
+        <button @click="handleEnable" class="btn btn-primary btn-full btn-lg submit-btn" :disabled="submitting">
           <div v-if="submitting" class="spinner spinner-sm"></div>
           {{ submitting ? t('common.loading') : t('auth.twoFactorConfirm') }}
         </button>
@@ -43,12 +46,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../application/auth.store.js";
 import { AuthenticationService } from "../../application/authentication.service.js";
 import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import { required, totpCode, blockNonDigits } from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -60,6 +65,11 @@ const code = ref("");
 const loadingSetup = ref(true);
 const submitting = ref(false);
 const error = ref("");
+
+const schema = computed(() => ({
+  code: [required(t('validation.required')), totpCode(t('validation.totpCode'))],
+}));
+const { errors, touch, validateAll } = useFormValidation(computed(() => ({ code: code.value })), schema);
 
 onMounted(async () => {
   if (!auth.challengeToken) {
@@ -78,6 +88,7 @@ onMounted(async () => {
 });
 
 async function handleEnable() {
+  if (submitting.value || !validateAll()) return;
   submitting.value = true;
   error.value = "";
   try {

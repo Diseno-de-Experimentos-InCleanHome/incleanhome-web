@@ -43,7 +43,7 @@
 
       <div v-else-if="event.status === 'open' && !deadlinePassed" class="card apply-card">
         <h3 class="card-title">{{ t('events.applyToEvent') }}</h3>
-        <textarea v-model="message" class="input-field no-resize" rows="3" :placeholder="t('events.messagePlaceholder')"></textarea>
+        <textarea v-model="message" class="input-field no-resize" rows="3" maxlength="500" :placeholder="t('events.messagePlaceholder')"></textarea>
         <div v-if="error" class="alert error-box">{{ error }}</div>
         <button @click="handleApply" class="btn btn-primary btn-full mt-3" :disabled="applying">
           <div v-if="applying" class="spinner spinner-sm"></div>

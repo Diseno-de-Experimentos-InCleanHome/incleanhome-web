@@ -6,33 +6,38 @@
     <div class="flex-col gap-5">
       <div class="card">
         <label class="label">{{ t('events.eventTitle') }}</label>
-        <input v-model="form.title" type="text" class="input-field mt-1" :placeholder="t('events.eventTitlePlaceholder')" />
+        <input v-model="form.title" type="text" :class="['input-field', 'mt-1', { 'input-error': errors.title }]" :placeholder="t('events.eventTitlePlaceholder')" :maxlength="LIMITS.eventTitleMax" @blur="touch('title')" />
+        <p v-if="errors.title" class="field-error">{{ errors.title }}</p>
         <label class="label mt-label">{{ t('events.description') }}</label>
-        <textarea v-model="form.description" class="input-field mt-1 no-resize" rows="3"></textarea>
+        <textarea v-model="form.description" :class="['input-field', 'mt-1', 'no-resize', { 'input-error': errors.description }]" rows="3" :maxlength="LIMITS.eventDescriptionMax" @blur="touch('description')"></textarea>
+        <p v-if="errors.description" class="field-error">{{ errors.description }}</p>
       </div>
 
       <div class="card">
         <label class="label">{{ t('worker.serviceTypes') }}</label>
         <div class="checkbox-group mt-1">
           <label v-for="svc in serviceOptions" :key="svc.value" class="checkbox-label">
-            <input type="checkbox" :value="svc.value" v-model="form.serviceTypes" />
+            <input type="checkbox" :value="svc.value" v-model="form.serviceTypes" @change="touch('serviceTypes')" />
             <span class="svc-label">{{ svc.label }}</span>
           </label>
         </div>
+        <p v-if="errors.serviceTypes" class="field-error">{{ errors.serviceTypes }}</p>
       </div>
 
       <div class="card">
         <div class="grid-2-cols gap-3">
           <div class="form-group">
             <label class="label">{{ t('search.zone') }}</label>
-            <select v-model="form.zone" class="input-field">
+            <select v-model="form.zone" :class="['input-field', { 'input-error': errors.zone }]" @change="touch('zone')" @blur="touch('zone')">
               <option value="" disabled>{{ t('search.zone') }}</option>
               <option v-for="z in zoneOptions" :key="z.value" :value="z.value">{{ z.label }}</option>
             </select>
+            <p v-if="errors.zone" class="field-error">{{ errors.zone }}</p>
           </div>
           <div class="form-group">
             <label class="label">{{ t('booking.address') }}</label>
-            <input v-model="form.address" type="text" class="input-field" />
+            <input v-model="form.address" type="text" :class="['input-field', { 'input-error': errors.address }]" :maxlength="LIMITS.addressMax" @blur="touch('address')" />
+            <p v-if="errors.address" class="field-error">{{ errors.address }}</p>
           </div>
         </div>
       </div>
@@ -41,21 +46,25 @@
         <div class="grid-2-cols gap-3">
           <div class="form-group">
             <label class="label">{{ t('events.eventDate') }}</label>
-            <input v-model="form.date" type="date" :min="today" class="input-field" />
+            <input v-model="form.date" type="date" :min="today" :class="['input-field', { 'input-error': errors.date }]" @blur="touch('date')" />
+            <p v-if="errors.date" class="field-error">{{ errors.date }}</p>
           </div>
           <div class="form-group">
             <label class="label">{{ t('events.workersNeeded') }}</label>
-            <input v-model.number="form.workersNeeded" type="number" min="1" class="input-field" />
+            <input v-model.number="form.workersNeeded" type="number" :min="LIMITS.workersNeededMin" :class="['input-field', { 'input-error': errors.workersNeeded }]" @blur="touch('workersNeeded')" />
+            <p v-if="errors.workersNeeded" class="field-error">{{ errors.workersNeeded }}</p>
           </div>
         </div>
         <div class="grid-2-cols gap-3 mt-3">
           <div class="form-group">
             <label class="label">{{ t('booking.startTime') }}</label>
-            <input v-model="form.startTime" type="time" class="input-field" @change="calcHours" />
+            <input v-model="form.startTime" type="time" :class="['input-field', { 'input-error': errors.startTime }]" @change="calcHours(); touch('endTime')" @blur="touch('startTime')" />
+            <p v-if="errors.startTime" class="field-error">{{ errors.startTime }}</p>
           </div>
           <div class="form-group">
             <label class="label">{{ t('booking.endTime') }}</label>
-            <input v-model="form.endTime" type="time" class="input-field" @change="calcHours" />
+            <input v-model="form.endTime" type="time" :class="['input-field', { 'input-error': errors.endTime }]" @change="calcHours" @blur="touch('endTime')" />
+            <p v-if="errors.endTime" class="field-error">{{ errors.endTime }}</p>
           </div>
         </div>
         <div v-if="form.hours > 0" class="hours-info">{{ form.hours }} {{ t('booking.hours') }}</div>
@@ -65,18 +74,20 @@
         <div class="grid-2-cols gap-3">
           <div class="form-group">
             <label class="label">{{ t('events.hourlyRateOffered') }}</label>
-            <input v-model.number="form.hourlyRateOffered" type="number" min="10" step="5" class="input-field" />
+            <input v-model.number="form.hourlyRateOffered" type="number" :min="LIMITS.hourlyRateMin" step="5" :class="['input-field', { 'input-error': errors.hourlyRateOffered }]" @blur="touch('hourlyRateOffered')" />
+            <p v-if="errors.hourlyRateOffered" class="field-error">{{ errors.hourlyRateOffered }}</p>
           </div>
           <div class="form-group">
             <label class="label">{{ t('events.applicationDeadline') }}</label>
-            <input v-model="form.applicationDeadline" type="datetime-local" class="input-field" />
+            <input v-model="form.applicationDeadline" type="datetime-local" :class="['input-field', { 'input-error': errors.applicationDeadline }]" @blur="touch('applicationDeadline')" />
+            <p v-if="errors.applicationDeadline" class="field-error">{{ errors.applicationDeadline }}</p>
           </div>
         </div>
       </div>
 
       <div v-if="error" class="alert error-box">{{ error }}</div>
 
-      <button @click="handleCreate" class="btn btn-primary btn-full btn-lg" :disabled="!canCreate || submitting">
+      <button @click="handleCreate" class="btn btn-primary btn-full btn-lg" :disabled="submitting">
         <div v-if="submitting" class="spinner spinner-sm"></div>
         {{ submitting ? t('common.loading') : t('events.publish') }}
       </button>
@@ -92,6 +103,10 @@ import { useToastStore } from "../../../Shared/application/toast.store.js";
 import { EventService } from "../../application/event.service.js";
 import { buildServiceOptions } from "../../../Shared/domain/constants/services.js";
 import { buildZoneOptions } from "../../../Shared/domain/constants/zones.js";
+import {
+  LIMITS, required, maxLength, integer, numeric, min, minItems, notPast, timeAfter,
+} from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -110,11 +125,25 @@ const form = ref({
 const serviceOptions = computed(() => buildServiceOptions(t));
 const zoneOptions = computed(() => buildZoneOptions(t));
 
-const canCreate = computed(() =>
-  form.value.title && form.value.serviceTypes.length > 0 && form.value.zone &&
-  form.value.address && form.value.date && form.value.workersNeeded >= 1 &&
-  form.value.hours > 0 && form.value.applicationDeadline
-);
+const schema = computed(() => {
+  const req = required(t('validation.required'));
+  const len = (n) => maxLength(n, t('validation.maxLength', { n }));
+  const past = notPast(t('validation.notPast'));
+  return {
+    title: [req, len(LIMITS.eventTitleMax)],
+    description: [len(LIMITS.eventDescriptionMax)],
+    serviceTypes: [minItems(1, t('validation.serviceTypesRequired'))],
+    zone: [required(t('validation.zoneRequired'))],
+    address: [req, len(LIMITS.addressMax)],
+    date: [req, past],
+    workersNeeded: [req, integer(t('validation.integer')), min(LIMITS.workersNeededMin, t('validation.min', { n: LIMITS.workersNeededMin }))],
+    startTime: [req],
+    endTime: [req, timeAfter("startTime", t('validation.timeAfter'))],
+    hourlyRateOffered: [req, numeric(t('validation.numeric')), min(LIMITS.hourlyRateMin, t('validation.min', { n: LIMITS.hourlyRateMin }))],
+    applicationDeadline: [req, past],
+  };
+});
+const { errors, touch, validateAll } = useFormValidation(form, schema);
 
 function calcHours() {
   if (!form.value.startTime || !form.value.endTime) return;
@@ -124,6 +153,7 @@ function calcHours() {
 }
 
 async function handleCreate() {
+  if (!validateAll()) return;
   submitting.value = true;
   error.value = "";
   try {
