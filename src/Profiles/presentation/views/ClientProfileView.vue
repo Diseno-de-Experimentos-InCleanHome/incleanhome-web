@@ -20,7 +20,8 @@
       <div class="form-group-list">
         <div class="form-group">
           <label class="label-bold">{{ t('auth.name') }}</label>
-          <input v-model="form.name" class="input-field" />
+          <input v-model="form.name" :class="['input-field', { 'input-error': errors.name }]" :maxlength="LIMITS.nameMax" @blur="touch('name')" />
+          <p v-if="errors.name" class="field-error">{{ errors.name }}</p>
         </div>
         <div class="form-group">
           <label class="label-bold">{{ t('auth.email') }}</label>
@@ -28,7 +29,8 @@
         </div>
         <div class="form-group">
           <label class="label-bold">{{ t('auth.phone') }}</label>
-          <input v-model="form.phone" class="input-field" />
+          <input v-model="form.phone" type="tel" :class="['input-field', { 'input-error': errors.phone }]" inputmode="numeric" maxlength="12" @keypress="blockNonDigits" @blur="touch('phone')" />
+          <p v-if="errors.phone" class="field-error">{{ errors.phone }}</p>
         </div>
         
         <div v-if="error" class="alert error-box"><AppIcon name="alertTriangle" :size="15" /> {{ error }}</div>
@@ -48,6 +50,8 @@ import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../../IAM/application/auth.store.js";
 import { ClientProfileService } from "../../application/client-profile.service.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import { LIMITS, required, minLength, maxLength, personName, peruPhone, blockNonDigits } from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t } = useI18n();
 const auth = useAuthStore();
@@ -56,6 +60,16 @@ const success = ref(false);
 const error = ref("");
 const loading = ref(true);
 const form = ref({ name: "", phone: "" });
+const schema = computed(() => ({
+  name: [
+    required(t('validation.nameRequired')),
+    minLength(LIMITS.nameMin, t('validation.minLength', { n: LIMITS.nameMin })),
+    maxLength(LIMITS.nameMax, t('validation.maxLength', { n: LIMITS.nameMax })),
+    personName(t('validation.personName')),
+  ],
+  phone: [peruPhone(t('validation.peruPhone'))],
+}));
+const { errors, touch, validateAll } = useFormValidation(form, schema);
 const initials = computed(() => (form.value.name || "U").split(" ").map(n => n[0]).slice(0,2).join("").toUpperCase());
 
 onMounted(async () => {
@@ -70,10 +84,7 @@ onMounted(async () => {
 });
 
 async function save() {
-  if (!form.value.name.trim()) {
-    error.value = t('validation.nameRequired') || "El nombre es requerido";
-    return;
-  }
+  if (!validateAll()) return;
   saving.value = true;
   error.value = "";
   try {

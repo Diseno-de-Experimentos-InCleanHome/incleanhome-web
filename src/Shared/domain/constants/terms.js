@@ -4,4 +4,4 @@
  *
  * Debe coincidir con TermsVersion.CurrentVersion en el backend (IAM).
  */
-export const CURRENT_TERMS_VERSION = "v2";
+export const CURRENT_TERMS_VERSION = "v3";

@@ -13,14 +13,16 @@
 
       <div class="card card-elevated">
         <h2 class="card-title">{{ t('auth.loginTitle') }}</h2>
-        <form @submit.prevent="handleLogin" class="auth-form">
+        <form @submit.prevent="handleLogin" class="auth-form" novalidate>
           <div class="form-group">
             <label class="label">{{ t('auth.email') }}</label>
-            <input v-model="form.email" type="email" class="input-field" required :placeholder="t('auth.email')" />
+            <input v-model="form.email" type="email" :class="['input-field', { 'input-error': errors.email }]" required :maxlength="LIMITS.emailMax" :placeholder="t('auth.email')" @blur="touch('email')" />
+            <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
           </div>
           <div class="form-group">
             <label class="label">{{ t('auth.password') }}</label>
-            <input v-model="form.password" type="password" class="input-field" required :placeholder="t('auth.password')" />
+            <input v-model="form.password" type="password" :class="['input-field', { 'input-error': errors.password }]" required :placeholder="t('auth.password')" @blur="touch('password')" />
+            <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
           </div>
           <div v-if="error" class="error-box">{{ error }}</div>
           <button type="submit" class="btn btn-primary btn-full btn-lg submit-btn" :disabled="loading">
@@ -42,16 +44,21 @@
         <router-link to="/terms" class="legal-link">{{ t('auth.terms') }}</router-link>
         <span class="legal-sep">·</span>
         <router-link to="/privacy" class="legal-link">{{ t('auth.privacy') }}</router-link>
+        <span class="legal-sep">·</span>
+        <router-link to="/reclamos" class="legal-link">Libro de reclamaciones</router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { AuthenticationService } from "../../application/authentication.service.js";
+import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import { LIMITS, required, email, maxLength } from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
 const { t, locale } = useI18n();
 const router = useRouter();
@@ -60,9 +67,17 @@ const form = ref({ email: "", password: "" });
 const loading = ref(false);
 const error = ref("");
 
+// Login only checks presence/format: password strength is enforced at registration.
+const schema = computed(() => ({
+  email: [required(t('validation.required')), email(t('validation.email')), maxLength(LIMITS.emailMax, t('validation.maxLength', { n: LIMITS.emailMax }))],
+  password: [required(t('validation.required'))],
+}));
+const { errors, touch, validateAll } = useFormValidation(form, schema);
+
 function toggleLang() { locale.value = locale.value === "es" ? "en" : "es"; }
 
 async function handleLogin() {
+  if (!validateAll()) return;
   loading.value = true;
   error.value = "";
   try {
@@ -79,7 +94,11 @@ async function handleLogin() {
       router.push("/2fa-setup");
       return;
     }
-    router.push(result.user.role === "worker" ? "/worker/dashboard" : "/client/search");
+    if (result.membershipPending) {
+      router.push("/membership-pending");
+      return;
+    }
+    router.push(roleHomePath(result.user.role));
   } catch (e) {
     error.value = e.response?.data?.error || t('common.error');
   } finally {

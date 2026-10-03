@@ -1,7 +1,7 @@
 # InCleanHome Frontend — Vite + Vue 3
 
 Frontend en **Vue 3 (sin TypeScript) + Vite**, organizado por bounded contexts (mismo patrón
-DDD que el backend hermano `InCleanHome-backend-main`): cada BC tiene su propia carpeta con
+DDD que el backend de la carpeta hermana `backend/`): cada BC tiene su propia carpeta con
 `domain/`, `application/`, `infrastructure/` y `presentation/`.
 
 InCleanHome es únicamente un intermediario entre clientes y trabajadoras del hogar — la
