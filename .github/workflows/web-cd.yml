@@ -1,0 +1,133 @@
+name: Web CD
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      deploy_to_vercel:
+        description: 'Disparar el Deploy Hook de Vercel al terminar el build'
+        type: boolean
+        default: false
+
+concurrency:
+  group: web-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test (Node 24 LTS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node 24 (LTS activa), fijo a propósito: con Node >= 25/26 el localStorage experimental de Node
+      # pisa al de jsdom y falla tests/chat-view.spec.js. Con `lts/*` el CI se rompería al pasar Node 26 a LTS.
+      - name: Setup Node.js (24 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test -- --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+
+      - name: Build
+        run: npm run build
+
+      # En push de tag la versión es el tag (v1.2.3); en ejecución manual, dev-<sha corto>.
+      - name: Resolve version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            version="$REF_NAME"
+          else
+            version="dev-${SHA::7}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Package dist
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: tar -czf "web-dist-${VERSION}.tar.gz" -C dist .
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-results
+          path: test-results/
+          if-no-files-found: warn
+
+      - name: Upload versioned dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist-${{ steps.version.outputs.version }}
+          path: web-dist-${{ steps.version.outputs.version }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download dist package
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist-${{ needs.build-and-test.outputs.version }}
+
+      - name: Create release with dist attached
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=""
+          # Tags con sufijo (v1.2.3-rc.1) se publican como pre-release.
+          if [[ "$TAG" == *-* ]]; then flags="--prerelease"; fi
+          gh release create "$TAG" "web-dist-${TAG}.tar.gz" $flags \
+            --title "$TAG" \
+            --generate-notes
+
+  deploy:
+    name: Deploy to Vercel (opcional)
+    needs: build-and-test
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_to_vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "::error::El secret VERCEL_DEPLOY_HOOK_URL no está configurado."
+            exit 1
+          fi
+          curl --fail --silent --show-error --request POST "$VERCEL_DEPLOY_HOOK_URL" > /dev/null
+          echo "Deploy hook de Vercel disparado."
