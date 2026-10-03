@@ -1,0 +1,58 @@
+name: Web CI
+
+on:
+  push:
+    branches: [develop, main, 'feature/**']
+  pull_request:
+    branches: [develop, main]
+
+# Cancela ejecuciones anteriores de la misma rama/PR cuando llega un push nuevo.
+concurrency:
+  group: web-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test (Node 24 LTS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node 24 (LTS activa), fijo a propósito: con Node >= 25/26 el localStorage experimental de Node
+      # pisa al de jsdom y falla tests/chat-view.spec.js. Con `lts/*` el CI se rompería al pasar Node 26 a LTS.
+      - name: Setup Node.js (24 LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Vitest: además de la salida en consola, escribe un reporte JUnit para subirlo como artefacto.
+      - name: Test
+        run: npm test -- --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-test-results
+          path: test-results/
+          if-no-files-found: warn
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+          if-no-files-found: error
