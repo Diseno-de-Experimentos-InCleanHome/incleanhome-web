@@ -24,7 +24,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { marked } from "marked";
+import { renderSafeMarkdown } from "../../../Shared/infrastructure/markdown.js";
 import { useAuthStore } from "../../application/auth.store.js";
 import { AuthenticationService } from "../../application/authentication.service.js";
 import { CURRENT_TERMS_VERSION } from "../../../Shared/domain/constants/terms.js";
@@ -46,7 +46,7 @@ onMounted(async () => {
   }
   const res = await fetch(`/docs/terms-${CURRENT_TERMS_VERSION}.md`);
   const markdown = await res.text();
-  html.value = marked.parse(markdown);
+  html.value = renderSafeMarkdown(markdown);
   loadingDoc.value = false;
 });
 
