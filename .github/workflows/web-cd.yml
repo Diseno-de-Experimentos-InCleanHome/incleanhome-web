@@ -40,6 +40,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint (ESLint, falla solo con errores)
+        run: npm run lint
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Test
         run: npm test -- --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml
 

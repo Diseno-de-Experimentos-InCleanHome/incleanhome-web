@@ -90,8 +90,12 @@ onMounted(async () => {
     const convos = await MessagingService.getConversations();
     const conv = convos.find(c => String(c.userId) === String(route.params.userId));
     if (conv) otherName.value = conv.userName;
-  } catch {}
-  try { await load(); } catch {} finally { loading.value = false; }
+  } catch (error) {
+    console.error("No se pudo cargar el nombre de la conversación", error);
+  }
+  try { await load(); } catch (error) {
+    console.error("No se pudieron cargar los mensajes", error);
+  } finally { loading.value = false; }
 });
 </script>
 

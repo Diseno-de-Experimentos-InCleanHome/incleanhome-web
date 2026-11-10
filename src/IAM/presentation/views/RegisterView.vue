@@ -137,6 +137,7 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import DOMPurify from "dompurify";
 import { AuthenticationService } from "../../application/authentication.service.js";
 import { buildServiceOptions } from "../../../Shared/domain/constants/services.js";
 import { buildZoneOptions } from "../../../Shared/domain/constants/zones.js";
@@ -157,10 +158,10 @@ const loading = ref(false);
 const error = ref("");
 const acceptedTerms = ref(false);
 
-const termsCheckboxLabel = computed(() => t('auth.acceptTermsCheckbox', {
+const termsCheckboxLabel = computed(() => DOMPurify.sanitize(t('auth.acceptTermsCheckbox', {
   terms: `<a href="/terms" target="_blank" class="link-primary">${t('auth.terms')}</a>`,
   privacy: `<a href="/privacy" target="_blank" class="link-primary">${t('auth.privacy')}</a>`,
-}));
+}), { ADD_ATTR: ['target'] }));
 
 const form = ref({
   name: "", email: "", password: "", phone: "",

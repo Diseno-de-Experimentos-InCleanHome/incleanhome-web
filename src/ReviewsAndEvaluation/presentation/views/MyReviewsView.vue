@@ -80,7 +80,9 @@ function formatDate(d) { return d ? new Date(d).toLocaleDateString("es-PE", { ye
 onMounted(async () => {
   try {
     reviews.value = await ReviewService.listForWorker(auth.user?.id);
-  } catch {} finally { loading.value = false; }
+  } catch (error) {
+    console.error("No se pudieron cargar las reseñas", error);
+  } finally { loading.value = false; }
 });
 </script>
 
