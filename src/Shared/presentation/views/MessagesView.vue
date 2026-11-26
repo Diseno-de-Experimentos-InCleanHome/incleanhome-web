@@ -34,14 +34,12 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 import { useAuthStore } from "../../../IAM/application/auth.store.js";
 import { MessagingService } from "../../application/messaging.service.js";
 import AppIcon from "../components/AppIcon.vue";
 
 const { t } = useI18n();
 const auth = useAuthStore();
-const route = useRoute();
 const conversations = ref([]);
 const loading = ref(true);
 
@@ -53,7 +51,9 @@ function formatTime(d) { if (!d) return ""; const dt = new Date(d); return dt.to
 onMounted(async () => {
   try {
     conversations.value = await MessagingService.getConversations();
-  } catch { } finally { loading.value = false; }
+  } catch (error) {
+    console.error("No se pudieron cargar las conversaciones", error);
+  } finally { loading.value = false; }
 });
 </script>
 

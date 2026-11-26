@@ -87,7 +87,9 @@ onMounted(async () => {
     const [s, b] = await Promise.all([WorkerProfileService.getStats(), BookingService.list()]);
     stats.value = s;
     bookings.value = b;
-  } catch { } finally { loading.value = false; }
+  } catch (error) {
+    console.error("No se pudo cargar el panel del prestador", error);
+  } finally { loading.value = false; }
 });
 </script>
 

@@ -76,7 +76,7 @@ onMounted(async () => {
   try {
     const profile = await ClientProfileService.getProfile();
     form.value = { name: profile.name, phone: profile.phone };
-  } catch (err) {
+  } catch {
     error.value = t('common.error');
   } finally {
     loading.value = false;
