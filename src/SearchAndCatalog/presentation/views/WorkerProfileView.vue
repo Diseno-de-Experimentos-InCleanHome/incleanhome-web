@@ -1,7 +1,7 @@
 <template>
   <div class="view-container max-w-4xl">
     <div v-if="loading" class="loader-wrapper"><div class="spinner spinner-lg"></div></div>
-    <div v-else-if="!worker" class="empty-state py-16"><p class="muted-text">Trabajadora no encontrada</p></div>
+    <div v-else-if="!worker" class="empty-state py-16"><p class="muted-text">{{ t('profile.notFound') }}</p></div>
     <div v-else>
       <button @click="$router.back()" class="btn btn-secondary btn-sm mb-4">← {{ t('common.back') }}</button>
 
@@ -14,10 +14,18 @@
             </div>
             <h1 class="profile-name">{{ worker.name }}</h1>
 
-            <div class="rating-display mt-1">
+            <div v-if="!showVerified" class="rating-display mt-1">
               <span v-for="i in 5" :key="i" :style="{ color: i <= Math.round(worker.averageRating || 0) ? '#f59e0b' : '#c5e8d8' }">★</span>
               <span class="rating-value">{{ (worker.averageRating || 0).toFixed(1) }}</span>
               <span class="rating-count">({{ worker.totalServices || 0 }})</span>
+            </div>
+            <div v-else-if="summary" class="rating-display mt-1" data-test="verified-rating">
+              <template v-if="summary.hasReviews()">
+                <span v-for="i in 5" :key="i" :style="{ color: i <= Math.round(summary.averageRating()) ? '#f59e0b' : '#c5e8d8' }">★</span>
+                <span class="rating-value">{{ summary.averageRating().toFixed(1) }}</span>
+                <span class="rating-count">({{ summary.verifiedReviewCount }})</span>
+              </template>
+              <span v-else class="rating-count">{{ t('reviews.verified.none') }}</span>
             </div>
 
              <div class="worker-rate">S/. {{ worker.hourlyRate }}</div>
@@ -77,7 +85,18 @@
           </div>
 
           <!-- Reviews -->
-          <div class="card">
+          <VerifiedReviewsSection
+            v-if="showVerified"
+            v-model:sort="sort"
+            v-model:service-type="serviceType"
+            :summary="summary"
+            :reviews="verifiedReviews"
+            :service-types="serviceTypes"
+            :loading="reviewsLoading"
+            :failed="reviewsFailed"
+            @retry="retryReviews"
+          />
+          <div v-else class="card">
             <h3 class="section-title">{{ t('profile.reviews') }}</h3>
              <div v-if="reviews.length === 0" class="muted-text">{{ t('profile.noReviews') }}</div>
              <div v-else class="reviews-list">
@@ -106,6 +125,13 @@ import { useI18n } from "vue-i18n";
 import { CatalogService } from "../../application/catalog.service.js";
 import { ReviewService } from "../../../ReviewsAndEvaluation/application/review.service.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import { TrackingService } from "../../../Tracking/application/tracking.service.js";
+import { PLATFORM, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
+import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
+import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
+import VerifiedReviewsSection from "../../../ReviewsAndEvaluation/presentation/components/VerifiedReviewsSection.vue";
+import { useVerifiedReviews } from "../../../ReviewsAndEvaluation/presentation/composables/useVerifiedReviews.js";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -113,6 +139,20 @@ const worker = ref(null);
 const availability = ref([]);
 const reviews = ref([]);
 const loading = ref(true);
+// Identifica esta visita para registrar una sola vez cada evento de la pantalla.
+const viewId = newId();
+
+function trackView(eventName, properties) {
+  TrackingService.track(eventName, properties,
+    { operationKey: viewId, experimentId: ExperimentId.VERIFIED_REVIEWS });
+}
+
+// US34: reseñas verificadas (tratamiento de EC-BLQ02). El control conserva la lista actual.
+const { isActive: showVerified } = useExperiment(ExperimentId.VERIFIED_REVIEWS);
+const {
+  summary, reviews: verifiedReviews, serviceTypes, sort, serviceType,
+  loading: reviewsLoading, failed: reviewsFailed, retry: retryReviews,
+} = useVerifiedReviews({ enabled: showVerified, workerId: () => route.params.id, allReviews: reviews });
 
 const days = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const colors = ["#009960","#1A2E4A","#00B272","#00B272","#f59e0b","#ef4444"];
@@ -122,6 +162,7 @@ const avatarBg = computed(() => colors[(worker.value?.id || 0) % colors.length])
 function formatDate(d) { return d ? new Date(d).toLocaleDateString("es-PE", { year:"numeric", month:"long", day:"numeric" }) : ""; }
 
 onMounted(async () => {
+  TrackingService.recordExposure(ExperimentId.VERIFIED_REVIEWS, "worker_profile");
   try {
     const id = route.params.id;
     const [w, av, rv] = await Promise.all([
@@ -132,6 +173,10 @@ onMounted(async () => {
     worker.value = w;
     availability.value = av;
     reviews.value = rv;
+    trackView(TrackingEventName.WORKER_PROFILE_VIEWED, { workerId: Number(id), platform: PLATFORM });
+    trackView(TrackingEventName.WORKER_REVIEWS_VIEWED, {
+      workerId: Number(id), reviewCount: rv.length, verifiedCount: rv.filter((r) => r.isVerified).length,
+    });
   } catch (error) {
     console.error("No se pudo cargar el perfil del prestador", error);
   } finally { loading.value = false; }

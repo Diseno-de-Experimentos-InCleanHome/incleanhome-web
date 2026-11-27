@@ -12,7 +12,7 @@
         </div>
         <div>
           <div class="worker-name">{{ worker?.name }}</div>
-          <div class="worker-rate">S/. {{ worker?.hourlyRate }}/hora</div>
+          <div class="worker-rate">{{ showEstimate ? formatCurrency(worker?.hourlyRate) : `S/. ${worker?.hourlyRate}` }}{{ t('search.perHour') }}</div>
         </div>
       </div>
 
@@ -71,7 +71,8 @@
         <p v-if="errors.notes" class="field-error">{{ errors.notes }}</p>
       </div>
 
-      <div class="card summary-card">
+      <BookingEstimatePanel v-if="showEstimate" :estimate="estimate" :error="estimateError" />
+      <div v-else class="card summary-card">
         <h3 class="card-title mb-4">Resumen</h3>
         <div class="summary-row"><span>{{ form.hours }}h × S/. {{ worker?.hourlyRate }}</span><span>S/. {{ totalAmount.toFixed(2) }}</span></div>
         <div class="summary-total">
@@ -95,16 +96,25 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useToastStore } from "../../../Shared/application/toast.store.js";
 import { BookingService } from "../../application/booking.service.js";
-import { BookingPricingService } from "../../domain/services/booking-pricing.service.js";
+import { BookingPricingService, minimumDuration } from "../../domain/services/booking-pricing.service.js";
+import BookingEstimatePanel from "../components/BookingEstimatePanel.vue";
+import { useBookingEstimate } from "../composables/useBookingEstimate.js";
+import { formatCurrency } from "../../../Shared/domain/format/currency.js";
 import { CatalogService } from "../../../SearchAndCatalog/application/catalog.service.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
 import { LIMITS, required, maxLength, notPast, timeAfter } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
+import { TrackingService } from "../../../Tracking/application/tracking.service.js";
+import { CAPTURED_BY_CLIENT, PLATFORM, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
+import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
+import { errorTypeOf } from "../../../Tracking/domain/services/error-type.js";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
+import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -115,6 +125,13 @@ const worker = ref(null);
 const workerLoading = ref(true);
 const submitting = ref(false);
 const error = ref("");
+// Un identificador por formulario abierto: une sus eventos.
+const formId = newId();
+
+function trackBooking(eventName, properties, operationKey) {
+  TrackingService.track(eventName, { formId, ...properties },
+    { operationKey, experimentId: ExperimentId.BOOKING_ESTIMATE });
+}
 
 const today = new Date();
 const viewYear = ref(today.getFullYear());
@@ -135,7 +152,8 @@ const schema = computed(() => {
   return {
     serviceType: [req],
     date: [required(t('validation.dateRequired')), notPast(t('validation.notPast'))],
-    endTime: [req, timeAfter("startTime", t('validation.timeAfter'))],
+    endTime: [req, timeAfter("startTime", t('validation.timeAfter')),
+      minimumDuration("startTime", t('validation.minDuration'))],
     address: [req, len(LIMITS.addressMax)],
     notes: [len(LIMITS.bookingNotesMax)],
   };
@@ -155,17 +173,43 @@ function isPast(d) {
   return date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
 }
 function calcHours() {
-  const [sh, sm] = form.value.startTime.split(":").map(Number);
-  const [eh, em] = form.value.endTime.split(":").map(Number);
-  form.value.hours = Math.max(0, (eh * 60 + em - sh * 60 - sm) / 60);
+  form.value.hours = BookingPricingService.hoursBetween(form.value.startTime, form.value.endTime) ?? 0;
+}
+
+// US41: monto estimado (tratamiento de EC-BLQ06). El control conserva el resumen actual.
+const { isActive: showEstimate } = useExperiment(ExperimentId.BOOKING_ESTIMATE);
+const { estimate, error: estimateError } = useBookingEstimate({
+  enabled: showEstimate,
+  hourlyRate: () => worker.value?.hourlyRate,
+  request: () => ({
+    workerId: Number(route.params.id),
+    serviceType: form.value.serviceType,
+    date: selectedDate.value,
+    startTime: form.value.startTime,
+    endTime: form.value.endTime,
+  }),
+});
+
+// La primera vez que el cliente ve un monto en este formulario.
+watch([showEstimate, estimate], ([visible, amount]) => {
+  if (!visible || !amount) return;
+  trackBooking(TrackingEventName.BOOKING_ESTIMATE_VIEWED, { estimatedAmount: amount.totalAmount }, formId);
+}, { immediate: true });
+
+/** Monto que se compara con el registrado: el mostrado o, en control, el mismo cálculo. */
+function expectedAmount() {
+  const shown = showEstimate.value ? estimate.value : null;
+  const { startTime, endTime } = form.value;
+  return (shown ?? BookingPricingService.estimate(worker.value?.hourlyRate, startTime, endTime))?.totalAmount;
 }
 async function handleBook() {
   if (!validateAll()) return;
   submitting.value = true;
   error.value = "";
+  const estimatedAmount = expectedAmount();
   try {
     const dateStr = selectedDate.value;
-    await BookingService.create({
+    const booking = await BookingService.create({
       workerId: parseInt(route.params.id),
       serviceType: form.value.serviceType,
       date: dateStr,
@@ -175,19 +219,33 @@ async function handleBook() {
       address: form.value.address,
       notes: form.value.notes,
     });
+    trackBooking(TrackingEventName.BOOKING_REQUEST_CREATED, {
+      bookingId: booking.id,
+      serviceCategory: booking.serviceType,
+      status: booking.status,
+      estimatedAmount,
+      registeredAmount: booking.totalAmount,
+      amountMatches: estimatedAmount === undefined ? undefined : estimatedAmount === booking.totalAmount,
+      capturedBy: CAPTURED_BY_CLIENT,
+    }, `booking:${booking.id}`);
     toast.success(t("booking.bookingSuccess"));
     router.push("/client/bookings");
   } catch (e) {
     error.value = e.response?.data?.error || t("common.error");
+    trackBooking(TrackingEventName.BOOKING_REQUEST_FAILED,
+      { errorType: errorTypeOf(e), platform: PLATFORM, capturedBy: CAPTURED_BY_CLIENT });
   } finally { submitting.value = false; }
 }
 
 onMounted(async () => {
+  TrackingService.recordExposure(ExperimentId.BOOKING_ESTIMATE, "booking_form");
   const id = route.params.id;
   const w = await CatalogService.getWorker(id);
   worker.value = w;
   if (w.serviceTypes?.length) form.value.serviceType = w.serviceTypes[0];
   workerLoading.value = false;
+  trackBooking(TrackingEventName.BOOKING_FORM_OPENED,
+    { workerId: Number(id), platform: PLATFORM }, formId);
 });
 </script>
 

@@ -41,6 +41,16 @@ VITE_API_BASE_URL=http://localhost:5000/api
 Si no se define, `Shared/infrastructure/http/api.client.js` usa `/api` como base (que Vite
 redirige al backend local vía el proxy de `vite.config.js` en desarrollo).
 
+Para que el proxy de desarrollo apunte a otro backend sin cambiar código, define en
+`.env.local` (ignorado por git):
+
+```env
+VITE_DEV_PROXY_TARGET=<origen del backend, sin /api>
+```
+
+Sin esa variable el proxy usa `http://localhost:5000`. El proxy se ejecuta en el servidor de
+Vite, así que el navegador no hace peticiones de otro origen (sin problemas de CORS).
+
 ## Build de producción
 
 ```bash

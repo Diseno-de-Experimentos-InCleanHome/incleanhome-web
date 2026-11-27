@@ -103,12 +103,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useI18n } from "vue-i18n";
 import { CatalogService } from "../../application/catalog.service.js";
 import { SearchFilters } from "../../domain/model/search-filters.value.js";
 import { buildServiceOptions } from "../../../Shared/domain/constants/services.js";
 import { buildZoneOptions } from "../../../Shared/domain/constants/zones.js";
+import { TrackingService } from "../../../Tracking/application/tracking.service.js";
+import { TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
+import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
 import WorkerCard from "../components/WorkerCard.vue";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
 
@@ -121,12 +124,50 @@ const filters = ref(SearchFilters.empty());
 const serviceOptions = computed(() => buildServiceOptions(t));
 const zoneOptions = computed(() => buildZoneOptions(t));
 
-async function doSearch() {
+// Una búsqueda se registra cuando el cliente deja de cambiar filtros, no por cada tecla.
+const SEARCH_SETTLE_MS = 800;
+let latestSearch = 0;
+let pendingSearch = null;
+let settleTimer = null;
+
+/** Devuelve la cantidad de resultados, o null si la consulta falló. */
+async function runSearch(params) {
   loading.value = true;
   try {
-    workers.value = await CatalogService.search(filters.value.toParams());
-  } catch { workers.value = []; }
-  finally { loading.value = false; }
+    workers.value = await CatalogService.search(params);
+    return workers.value.length;
+  } catch {
+    workers.value = [];
+    return null;
+  } finally { loading.value = false; }
+}
+
+/** Búsqueda decidida por el cliente. El listado inicial no cuenta como búsqueda. */
+async function doSearch() {
+  const search = ++latestSearch;
+  const params = filters.value.toParams();
+  clearTimeout(settleTimer);
+  pendingSearch = null;
+
+  const resultsCount = await runSearch(params);
+  if (resultsCount === null || search !== latestSearch) return;
+  pendingSearch = { params, resultsCount };
+  settleTimer = setTimeout(trackPendingSearch, SEARCH_SETTLE_MS);
+}
+
+function trackPendingSearch() {
+  clearTimeout(settleTimer);
+  if (!pendingSearch) return;
+  const { params, resultsCount } = pendingSearch;
+  pendingSearch = null;
+  TrackingService.track(TrackingEventName.WORKER_SEARCH_PERFORMED, {
+    searchId: newId(),
+    searchMode: "filters",
+    serviceCategory: params.serviceType,
+    district: params.zone,
+    filtersApplied: Object.keys(params).length,
+    resultsCount,
+  });
 }
 
 function clearFilters() {
@@ -134,7 +175,8 @@ function clearFilters() {
   doSearch();
 }
 
-onMounted(doSearch);
+onMounted(() => runSearch(filters.value.toParams()));
+onBeforeUnmount(trackPendingSearch);
 </script>
 
 <style scoped>

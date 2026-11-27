@@ -24,6 +24,9 @@ const routes = [
   { path: "/privacy",          component: () => import("./Shared/presentation/views/PrivacyView.vue"),      meta: { public: true } },
   { path: "/membership-pending", component: () => import("./Memberships/presentation/views/MembershipPendingView.vue"), meta: { public: true } },
 
+  // Ayuda previa al reclamo (US38) — pública; con el experimento apagado lleva a /reclamos
+  { path: "/ayuda",                component: () => import("./Support/presentation/views/SupportView.vue"), meta: { public: true } },
+
   // Libro de reclamaciones — público, no requiere sesión
   { path: "/reclamos",             component: () => import("./Claims/presentation/views/ClaimsBookView.vue"), meta: { public: true } },
   { path: "/reclamos/seguimiento", component: () => import("./Claims/presentation/views/ClaimTrackView.vue"), meta: { public: true } },

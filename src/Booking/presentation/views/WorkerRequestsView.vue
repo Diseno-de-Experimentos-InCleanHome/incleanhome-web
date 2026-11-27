@@ -44,9 +44,8 @@
 
         <div class="card-footer">
           <div>
-            <span class="earning-label">Tu ganancia: </span>
-            <span class="earning-amount">S/. {{ b.workerEarning }}</span>
-            <span class="total-amount">(total S/. {{ b.totalAmount }})</span>
+            <span class="total-label">{{ t('booking.total') }}: </span>
+            <span class="total-amount">S/. {{ b.totalAmount }}</span>
           </div>
           <div class="action-buttons" v-if="b.status === 'pending'">
             <button @click="updateStatus(b.id, 'rejected')" class="btn btn-danger btn-sm">{{ t('common.reject') }}</button>
@@ -210,9 +209,8 @@ onMounted(load);
   margin-top:0.875rem; 
   padding-top:0.875rem; 
 }
-.earning-label { font-size:0.8125rem; color:#3A4A5C; }
-.earning-amount { font-weight:700; color:#00B272; margin-left:0.25rem; }
-.total-amount { font-size:0.75rem; color:#7A8FA6; margin-left:0.25rem; }
+.total-label { font-size:0.8125rem; color:#3A4A5C; }
+.total-amount { font-weight:700; color:#00B272; margin-left:0.25rem; }
 
 .action-buttons {
   display: flex;

@@ -21,7 +21,7 @@
         <p v-if="errors.code" class="field-error">{{ errors.code }}</p>
       </div>
 
-      <div v-if="error" class="error-box">{{ error }}</div>
+      <div v-if="error" class="error-box" role="alert">{{ error }}</div>
 
       <button @click="handleVerify" class="btn btn-primary btn-full btn-lg submit-btn" :disabled="submitting">
         <div v-if="submitting" class="spinner spinner-sm"></div>
@@ -42,9 +42,11 @@ import { AuthenticationService } from "../../application/authentication.service.
 import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
 import { required, totpCode, blockNonDigits } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
+import { useAuthErrorMessage } from "../composables/useAuthErrorMessage.js";
 
 const { t } = useI18n();
 const router = useRouter();
+const errorMessage = useAuthErrorMessage();
 const auth = useAuthStore();
 
 const code = ref("");
@@ -74,7 +76,7 @@ async function handleVerify() {
     }
     router.push(roleHomePath(result.user.role));
   } catch (e) {
-    error.value = e.response?.data?.error || t('common.error');
+    error.value = errorMessage(e);
   } finally {
     submitting.value = false;
   }
