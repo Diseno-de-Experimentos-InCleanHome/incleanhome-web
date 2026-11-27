@@ -313,3 +313,16 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | Encendido | `/ayuda` con una pregunta abierta y, otra, tras "Sí, se resolvió" |
 | Encendido | `/reclamos` abierto desde "No, registrar un reclamo", con la categoría completada |
 | Apagado | `/reclamos` sin la tarjeta; `/ayuda` redirigiendo a `/reclamos` |
+
+## Arreglos de la auditoría
+
+Rama `fix/auditoria-web`; pruebas en `tests/audit-fixes.spec.js` (10). Resultado: `npm test`
+275/275; `npm run build` correcto (Node 24).
+
+| Commit | Arreglo | Pantallas | Captura |
+|---|---|---|---|
+| `607c415` fix(web): quita la barra repetida en la tarifa por hora | "//hora" pasa a "/hora"; la reserva traduce la unidad | Eventos (tarjeta y detalles), `/client/worker/:id/book` | Tarjeta de evento y formulario de reserva en es y en |
+| `af07c77` fix(web): muestra solo el total en las solicitudes de reserva | Se quita "Tu ganancia", que mostraba una cifra vacía | `/worker/requests` | Solicitud con "Total referencial" |
+| `48048b0` fix(web): usa lenguaje neutro en los textos visibles | Femenino genérico a "prestador/a" | Inicio de sesión, registro, búsqueda, perfil, reservas, eventos, mensajes | Login, registro y búsqueda |
+
+Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificaron.
