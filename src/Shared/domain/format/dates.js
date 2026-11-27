@@ -19,3 +19,18 @@ export function formatLongDate(date, locale) {
   if (!date || Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString(dateLocale(locale), { year: "numeric", month: "long", day: "numeric" });
 }
+
+/** Fecha y hora del API. Las que llegan sin zona están en UTC. */
+export function parseApiDate(text) {
+  if (!text) return null;
+  const zoned = /(Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`;
+  const date = new Date(zoned);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDateTime(date, locale) {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(dateLocale(locale), {
+    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+}
