@@ -24,7 +24,7 @@
             <input v-model="form.password" type="password" :class="['input-field', { 'input-error': errors.password }]" required :placeholder="t('auth.password')" @blur="touch('password')" />
             <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
           </div>
-          <div v-if="error" class="error-box">{{ error }}</div>
+          <div v-if="error" class="error-box" role="alert">{{ error }}</div>
           <button type="submit" class="btn btn-primary btn-full btn-lg submit-btn" :disabled="loading">
             <div v-if="loading" class="spinner spinner-sm"></div>
             {{ loading ? t('common.loading') : t('auth.login') }}
@@ -59,9 +59,11 @@ import { AuthenticationService } from "../../application/authentication.service.
 import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
 import { LIMITS, required, email, maxLength } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
+import { useAuthErrorMessage } from "../composables/useAuthErrorMessage.js";
 
 const { t, locale } = useI18n();
 const router = useRouter();
+const errorMessage = useAuthErrorMessage();
 
 const form = ref({ email: "", password: "" });
 const loading = ref(false);
@@ -100,7 +102,7 @@ async function handleLogin() {
     }
     router.push(roleHomePath(result.user.role));
   } catch (e) {
-    error.value = e.response?.data?.error || t('common.error');
+    error.value = errorMessage(e);
   } finally {
     loading.value = false;
   }
