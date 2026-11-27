@@ -102,8 +102,8 @@ describe.each(views)("US39 - Pantalla de %s", (_, render) => {
   });
 
   it("testOtrosErrores_SinCambios", async () => {
-    await expect(submitWith(failure(401, { error: "Credenciales inválidas" }))).resolves
-      .toBe("Credenciales inválidas");
+    await expect(submitWith(failure(400, { error: "Datos no válidos" }))).resolves
+      .toBe("Datos no válidos");
   });
 
   it("testSinRespuesta_ErrorGenerico", async () => {
