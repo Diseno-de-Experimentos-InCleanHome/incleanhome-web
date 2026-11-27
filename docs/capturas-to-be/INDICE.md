@@ -26,6 +26,16 @@ En estas tres historias, la web y el backend solo declaran el identificador del 
 backend, parte del plan de tracking. La app Android sí tiene interfaz para ellas; no forma parte de
 estas capturas. Activar o apagar sus flags no cambia ninguna pantalla de la web.
 
+## Capturas repetidas tras dos arreglos
+
+Estas tres se volvieron a tomar el 26/11/2026; las demás no cambiaron.
+
+| Archivo | Qué corrige | Commit en `develop` |
+|---|---|---|
+| [`us43-swagger-get-experiments-config-on.png`](us43-swagger-get-experiments-config-on.png) | Swagger muestra completa la fórmula `SHA-256("<experimentId>:<userId>")` | Backend `5a75a91` |
+| [`us39-login-credenciales-erroneas-on.png`](us39-login-credenciales-erroneas-on.png) | El error de credenciales sale en el idioma de la interfaz | Web `9cf0f9e` |
+| [`us39-login-credenciales-erroneas-off.png`](us39-login-credenciales-erroneas-off.png) | El error de credenciales sale en el idioma de la interfaz | Web `9cf0f9e` |
+
 ## Pantallas
 
 ### US34 — Reseñas verificadas e historial del prestador/a (`EC-BLQ02`)
