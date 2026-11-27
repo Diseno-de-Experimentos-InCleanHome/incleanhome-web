@@ -207,11 +207,11 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 
 | Dato | Valor |
 |---|---|
-| Rama | `feature/us39-limite-intentos` |
-| Commits | `67690c9` feat(web): US39 muestra la espera cuando se limitan los intentos de acceso<br>`4c68c8b` test(web): US39 pruebas del mensaje de límite de intentos |
-| Pantallas afectadas | `/login`, `/2fa-verify` |
+| Ramas | `feature/us39-limite-intentos`, `feature/us39-limite-2fa-setup` |
+| Commits | `67690c9` feat(web): US39 muestra la espera cuando se limitan los intentos de acceso<br>`4c68c8b` test(web): US39 pruebas del mensaje de límite de intentos<br>`5364153` feat(web): US39 muestra la espera del límite de intentos al activar el 2FA<br>`7f7e213` test(web): US39 prueba el límite de intentos en la activación del 2FA |
+| Pantallas afectadas | `/login`, `/2fa-verify`, `/2fa-setup` |
 | Experimento | Ninguno (siempre activo) |
-| Endpoints | `POST /api/auth/login`, `POST /api/auth/2fa/verify` (respuesta `429`) |
+| Endpoints | `POST /api/auth/login`, `POST /api/auth/2fa/verify`, `POST /api/auth/2fa/enable` (respuesta `429`) |
 
 ### Comportamiento
 
@@ -220,14 +220,14 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
   esperar un momento.
 - Límites del API por dirección IP: 5 inicios de sesión y 10 comprobaciones de código por
   minuto.
-- La activación del 2FA (`/2fa-setup`) comparte el límite de códigos y sigue mostrando el texto
-  que envía el API (solo en español).
+- La activación del 2FA (`/2fa-setup`) comparte el límite de códigos y muestra el mismo mensaje.
 
 ### Pruebas
 
-- `tests/rate-limit.spec.js` (17): lectura de la espera y ambas pantallas (es, en, sin dato y
+- `tests/rate-limit.spec.js` (23): lectura de la espera y las tres pantallas (es, en, sin dato y
   otros errores).
-- Resultado: `npm test` 217/217; `npm run build` correcto (Node 24).
+- Resultado: `npm test` 217/217 al cerrar la primera rama y 281/281 al cerrar la segunda;
+  `npm run build` correcto (Node 24).
 
 ### Capturas a tomar
 
@@ -235,7 +235,7 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 |---|---|
 | Normal | `/login` con credenciales erróneas: mensaje de siempre |
 | Límite | `/login` tras el sexto intento en un minuto: mensaje con los segundos, y en Network el `429` |
-| Límite 2FA | `/2fa-verify` tras el undécimo código en un minuto |
+| Límite 2FA | `/2fa-verify` o `/2fa-setup` tras el undécimo código en un minuto |
 
 ## US36 — Seguimiento y tiempos de atención de reclamos
 
