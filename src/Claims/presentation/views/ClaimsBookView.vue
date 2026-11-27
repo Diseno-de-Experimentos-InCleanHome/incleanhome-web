@@ -18,6 +18,12 @@
         </div>
 
         <div v-else key="form" class="card card-elevated">
+          <aside v-if="showHelpEntry" class="help-entry" data-test="help-entry">
+            <strong>{{ t('support.entryTitle') }}</strong>
+            <p>{{ t('support.entryBody') }}</p>
+            <router-link to="/ayuda" class="btn btn-outline btn-sm">{{ t('support.entryAction') }}</router-link>
+          </aside>
+
           <h2 class="card-title">Libro de reclamaciones</h2>
           <p class="card-subtitle">
             Registra aquí tu reclamo o queja. Es un registro interno — no se envía a
@@ -86,8 +92,13 @@
 
 <script setup>
 import { ref, computed } from "vue";
+import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../../IAM/application/auth.store.js";
 import { ClaimsApi } from "../../infrastructure/claims.api.js";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
+import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
+import { isFaqCategory } from "../../../Support/domain/model/faq.catalog.js";
 import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
 import {
   LIMITS, required, minLength, maxLength, personName, email, peruPhone,
@@ -95,6 +106,8 @@ import {
 } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 
+const { t } = useI18n();
+const route = useRoute();
 const auth = useAuthStore();
 const homeLink = computed(() => (auth.isLoggedIn ? roleHomePath(auth.user?.role) : "/login"));
 
@@ -111,7 +124,14 @@ function emptyForm() {
   };
 }
 
+// US38: acceso a las preguntas frecuentes antes del formulario (EC-BLQ04). Quien llega desde
+// una de ellas ya las vio y trae la categoría de su problema.
+const { isActive: helpActive } = useExperiment(ExperimentId.SUPPORT_FAQ);
+const faqCategory = isFaqCategory(route.query.categoria) ? route.query.categoria : null;
+const showHelpEntry = computed(() => helpActive.value && !faqCategory);
+
 const form = ref(emptyForm());
+if (faqCategory) form.value.relatedService = t(`support.categories.${faqCategory}`);
 const loading = ref(false);
 const error = ref("");
 const createdCode = ref("");
@@ -158,6 +178,7 @@ function resetForm() {
 .card-elevated { box-shadow:0 20px 40px rgba(0,0,0,0.08); padding: 2rem; }
 .card-title { font-size:1.25rem; font-weight:700; color:#1A2E4A; margin-bottom:0.5rem; }
 .card-subtitle { color:#3A4A5C; font-size:0.875rem; margin-bottom:1.5rem; line-height: 1.5; }
+.help-entry { background: #E6F9F2; border: 1px solid #c5e8d8; border-radius: 0.75rem; padding: 0.875rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.375rem; font-size: 0.875rem; color: #1A2E4A; }
 .link-primary { color:#009960; font-weight:500; text-decoration: none; margin-left: 0.25rem; }
 .link-primary:hover { text-decoration: underline; }
 .form { display: flex; flex-direction: column; gap: 1rem; }
