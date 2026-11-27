@@ -14,6 +14,7 @@ vi.mock("../src/Shared/infrastructure/http/api.client.js", () => ({
 
 import i18n from "../src/Shared/infrastructure/i18n/i18n.js";
 import EventCard from "../src/Events/presentation/components/EventCard.vue";
+import WorkerRequestsView from "../src/Booking/presentation/views/WorkerRequestsView.vue";
 
 const source = (path) => readFileSync(join(process.cwd(), path), "utf8");
 const views = readdirSync(join(process.cwd(), "src"), { recursive: true })
@@ -39,5 +40,18 @@ describe("Auditoría a) - Tarifa por hora sin barra doble", () => {
     for (const view of views) {
       expect(source(view), view).not.toMatch(/\/\{\{ t\('search\.perHour'\)|\}\}\/hora/);
     }
+  });
+});
+
+describe("Auditoría b) - Solicitudes sin ganancia inexistente", () => {
+  it("testSolicitud_MuestraSoloElTotal", async () => {
+    get.mockResolvedValue({ data: [{ id: 1, clientId: 2, clientName: "Persona", serviceType: "cocina", status: "pending", date: "2026-11-30", startTime: "08:00", endTime: "10:00", hours: 2, address: "x", totalAmount: 40 }] });
+
+    const wrapper = mount(WorkerRequestsView, { global: { plugins: [i18n], stubs: { AppIcon: true, RouterLink: true } } });
+    await flushPromises();
+
+    const footer = wrapper.find(".card-footer").text();
+    expect(footer).toContain("Total referencial: S/. 40");
+    expect(footer).not.toMatch(/ganancia|undefined/i);
   });
 });
