@@ -55,3 +55,20 @@ describe("Auditoría b) - Solicitudes sin ganancia inexistente", () => {
     expect(footer).not.toMatch(/ganancia|undefined/i);
   });
 });
+
+describe("Auditoría c) - Lenguaje neutro", () => {
+  it.each([
+    "index.html",
+    "src/Shared/infrastructure/i18n/i18n.js",
+    "src/Booking/presentation/views/ClientBookingsView.vue",
+    "src/SearchAndCatalog/presentation/views/WorkerProfileView.vue",
+  ])("testTextos_SinFemeninoGenerico en %s", (file) => {
+    expect(source(file)).not.toMatch(/trabajadora|bienvenida de nuevo$|"Bienvenida/im);
+  });
+
+  it.each(["es", "en"])("testClavesNuevas_en %s", (locale) => {
+    for (const key of ["search.findWorkers", "profile.notFound"]) {
+      expect(i18n.global.te(key, locale), key).toBe(true);
+    }
+  });
+});
