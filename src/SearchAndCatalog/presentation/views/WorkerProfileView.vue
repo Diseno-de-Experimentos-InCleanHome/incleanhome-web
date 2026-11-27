@@ -106,6 +106,10 @@ import { useI18n } from "vue-i18n";
 import { CatalogService } from "../../application/catalog.service.js";
 import { ReviewService } from "../../../ReviewsAndEvaluation/application/review.service.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import { TrackingService } from "../../../Tracking/application/tracking.service.js";
+import { PLATFORM, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
+import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -113,6 +117,13 @@ const worker = ref(null);
 const availability = ref([]);
 const reviews = ref([]);
 const loading = ref(true);
+// Identifica esta visita para registrar una sola vez cada evento de la pantalla.
+const viewId = newId();
+
+function trackView(eventName, properties) {
+  TrackingService.track(eventName, properties,
+    { operationKey: viewId, experimentId: ExperimentId.VERIFIED_REVIEWS });
+}
 
 const days = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 const colors = ["#009960","#1A2E4A","#00B272","#00B272","#f59e0b","#ef4444"];
@@ -132,6 +143,8 @@ onMounted(async () => {
     worker.value = w;
     availability.value = av;
     reviews.value = rv;
+    trackView(TrackingEventName.WORKER_PROFILE_VIEWED, { workerId: Number(id), platform: PLATFORM });
+    trackView(TrackingEventName.WORKER_REVIEWS_VIEWED, { workerId: Number(id), reviewCount: rv.length });
   } catch (error) {
     console.error("No se pudo cargar el perfil del prestador", error);
   } finally { loading.value = false; }

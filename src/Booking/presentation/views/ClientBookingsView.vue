@@ -81,6 +81,8 @@ import { useToastStore } from "../../../Shared/application/toast.store.js";
 import { BookingService } from "../../application/booking.service.js";
 import { ReviewService } from "../../../ReviewsAndEvaluation/application/review.service.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
+import { TrackingService } from "../../../Tracking/application/tracking.service.js";
+import { CAPTURED_BY_CLIENT, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
 
 const { t } = useI18n();
 const toast = useToastStore();
@@ -103,7 +105,15 @@ async function cancelBooking(id) {
 
 async function submitReview() {
   try {
-    await ReviewService.create({ bookingId: reviewBooking.value.id, workerId: reviewBooking.value.workerId, ...reviewForm.value });
+    const bookingId = reviewBooking.value.id;
+    const review = await ReviewService.create({ bookingId, workerId: reviewBooking.value.workerId, ...reviewForm.value });
+    TrackingService.track(TrackingEventName.REVIEW_SUBMITTED, {
+      bookingId,
+      rating: review.rating,
+      isVerified: review.isVerified,
+      source: "direct",
+      capturedBy: CAPTURED_BY_CLIENT,
+    }, { operationKey: `review:${bookingId}` });
     reviewBooking.value = null;
     toast.success("¡Gracias por tu reseña!");
     await load();

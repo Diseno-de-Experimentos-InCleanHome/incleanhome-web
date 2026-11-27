@@ -105,6 +105,11 @@ import { CatalogService } from "../../../SearchAndCatalog/application/catalog.se
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
 import { LIMITS, required, maxLength, notPast, timeAfter } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
+import { TrackingService } from "../../../Tracking/application/tracking.service.js";
+import { CAPTURED_BY_CLIENT, PLATFORM, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
+import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
+import { errorTypeOf } from "../../../Tracking/domain/services/error-type.js";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -115,6 +120,13 @@ const worker = ref(null);
 const workerLoading = ref(true);
 const submitting = ref(false);
 const error = ref("");
+// Un identificador por formulario abierto: une sus eventos.
+const formId = newId();
+
+function trackBooking(eventName, properties, operationKey) {
+  TrackingService.track(eventName, { formId, ...properties },
+    { operationKey, experimentId: ExperimentId.BOOKING_ESTIMATE });
+}
 
 const today = new Date();
 const viewYear = ref(today.getFullYear());
@@ -165,7 +177,7 @@ async function handleBook() {
   error.value = "";
   try {
     const dateStr = selectedDate.value;
-    await BookingService.create({
+    const booking = await BookingService.create({
       workerId: parseInt(route.params.id),
       serviceType: form.value.serviceType,
       date: dateStr,
@@ -175,10 +187,19 @@ async function handleBook() {
       address: form.value.address,
       notes: form.value.notes,
     });
+    trackBooking(TrackingEventName.BOOKING_REQUEST_CREATED, {
+      bookingId: booking.id,
+      serviceCategory: booking.serviceType,
+      status: booking.status,
+      registeredAmount: booking.totalAmount,
+      capturedBy: CAPTURED_BY_CLIENT,
+    }, `booking:${booking.id}`);
     toast.success(t("booking.bookingSuccess"));
     router.push("/client/bookings");
   } catch (e) {
     error.value = e.response?.data?.error || t("common.error");
+    trackBooking(TrackingEventName.BOOKING_REQUEST_FAILED,
+      { errorType: errorTypeOf(e), platform: PLATFORM, capturedBy: CAPTURED_BY_CLIENT });
   } finally { submitting.value = false; }
 }
 
@@ -188,6 +209,8 @@ onMounted(async () => {
   worker.value = w;
   if (w.serviceTypes?.length) form.value.serviceType = w.serviceTypes[0];
   workerLoading.value = false;
+  trackBooking(TrackingEventName.BOOKING_FORM_OPENED,
+    { workerId: Number(id), platform: PLATFORM }, formId);
 });
 </script>
 
