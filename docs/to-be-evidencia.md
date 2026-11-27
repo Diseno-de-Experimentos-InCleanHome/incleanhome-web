@@ -160,3 +160,44 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | Encendido (tratamiento) | Formulario con fecha elegida: tarjeta "Monto estimado" con tarifa, duración y total |
 | Encendido (tratamiento) | La misma tarjeta tras cambiar la hora de fin, y en Network el `POST /api/bookings/estimate` |
 | Apagado | El mismo formulario con la tarjeta "Resumen" |
+
+## US34 — Reseñas verificadas e historial del prestador/a
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us34-resenas-verificadas` |
+| Commits | `95809b5` feat(web): US34 valida el comentario obligatorio de la reseña<br>`90a7a2f` feat(web): US34 muestra reseñas verificadas e historial del prestador/a<br>`7d76e2f` test(web): US34 pruebas de reseñas verificadas y comentario obligatorio |
+| Pantallas afectadas | `/client/worker/:id`; modal de reseña en `/client/bookings` |
+| Experimento | `EC-BLQ02` (A/B, solo clientes) |
+| Endpoints | `GET /api/reviews/worker/{id}?sort=&serviceType=`, `GET /api/reviews/worker/{id}/summary` |
+
+### Comportamiento
+
+- Tratamiento: solo reseñas verificadas (como la app móvil), cada una con insignia, tipo de
+  servicio y fecha del servicio; promedio con un decimal, distribución de 5 a 1 estrellas,
+  servicios completados, orden por fecha y filtro por servicio resueltos por el API. La cabecera
+  del perfil usa el mismo resumen.
+- Sin reseñas: "Este prestador/a todavía no tiene reseñas verificadas." y los servicios
+  completados, sin promedio. Si el API falla: aviso con "Reintentar".
+- El texto del campo `message` del resumen no se muestra: llega solo en español.
+- Control o experimento apagado: la lista y la cabecera de siempre.
+- Modal de reseña (con o sin experimento): comentario obligatorio de 1 a 1000 caracteres, con
+  mensaje antes de enviar.
+- `worker_reviews_viewed` suma `verifiedCount`; `experiment_exposure` con
+  `location: "worker_profile"`.
+
+### Pruebas
+
+- `tests/verified-reviews.spec.js` (22): dominio, API, tratamiento, estados vacío y de error,
+  flag apagado o en control y comentario del modal.
+- Resultado: `npm test` 200/200; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Encendido (tratamiento) | Perfil con promedio, distribución, servicios completados e insignias con servicio y fecha |
+| Encendido (tratamiento) | La lista tras ordenar "Más antiguas" y filtrar un servicio |
+| Encendido, sin reseñas | Perfil de un prestador/a sin reseñas: mensaje sin promedio |
+| Apagado | El mismo perfil con la lista de siempre |
+| Cualquiera | Modal de reseña con el comentario vacío y el mensaje de validación |

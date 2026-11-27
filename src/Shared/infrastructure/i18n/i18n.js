@@ -225,6 +225,22 @@ const messages = {
     },
     reviews: {
       total: "reseñas en total",
+      verified: {
+        badge: "Reseña verificada",
+        average: "Calificación promedio",
+        count: "{n} reseñas verificadas | {n} reseña verificada | {n} reseñas verificadas",
+        completed: "{n} servicios completados | {n} servicio completado | {n} servicios completados",
+        distribution: "Distribución por estrellas",
+        sortLabel: "Orden por fecha",
+        sortNewest: "Más recientes",
+        sortOldest: "Más antiguas",
+        published: "Publicada el {date}",
+        empty: "Este prestador/a todavía no tiene reseñas verificadas.",
+        none: "Sin reseñas verificadas",
+        noMatches: "No hay reseñas verificadas para ese servicio.",
+        loadError: "No se pudieron cargar las reseñas verificadas.",
+        retry: "Reintentar",
+      },
     },
     messages: {
       title: "Mensajes",
@@ -253,6 +269,7 @@ const messages = {
       notPast: "La fecha no puede estar en el pasado",
       timeAfter: "La hora de fin debe ser posterior a la de inicio",
       minDuration: "La duración mínima de una reserva es de 30 minutos",
+      reviewComment: "Escribe un comentario de 1 a {max} caracteres para enviar tu reseña",
     },
     common: {
       save: "Guardar",
@@ -493,6 +510,22 @@ const messages = {
     },
     reviews: {
       total: "reviews total",
+      verified: {
+        badge: "Verified review",
+        average: "Average rating",
+        count: "{n} verified reviews | {n} verified review | {n} verified reviews",
+        completed: "{n} services completed | {n} service completed | {n} services completed",
+        distribution: "Distribution by stars",
+        sortLabel: "Sort by date",
+        sortNewest: "Most recent",
+        sortOldest: "Oldest",
+        published: "Published on {date}",
+        empty: "This worker has no verified reviews yet.",
+        none: "No verified reviews",
+        noMatches: "There are no verified reviews for that service.",
+        loadError: "The verified reviews could not be loaded.",
+        retry: "Try again",
+      },
     },
     messages: {
       title: "Messages",
@@ -521,6 +554,7 @@ const messages = {
       notPast: "The date cannot be in the past",
       timeAfter: "End time must be after start time",
       minDuration: "A booking must last at least 30 minutes",
+      reviewComment: "Write a comment of 1 to {max} characters to send your review",
     },
     common: {
       save: "Save",
