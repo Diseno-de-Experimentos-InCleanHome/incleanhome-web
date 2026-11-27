@@ -2,7 +2,7 @@
  * Servicio de aplicación de reservas.
  * Capa: Booking / application
  *
- * Casos de uso: listar, crear, cambiar estado de una reserva.
+ * Casos de uso: listar, estimar, crear, cambiar estado de una reserva.
  */
 import { BookingApi } from "../infrastructure/booking.api.js";
 import { Booking } from "../domain/model/booking.entity.js";
@@ -13,6 +13,11 @@ export const BookingService = {
     return raw
       .map(Booking.fromApi)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  },
+
+  /** Monto referencial antes de reservar (US41). Solo clientes. */
+  async estimate({ workerId, serviceType, date, startTime, endTime }) {
+    return BookingApi.estimate({ workerId, serviceType, date, startTime, endTime });
   },
 
   async create(payload) {
