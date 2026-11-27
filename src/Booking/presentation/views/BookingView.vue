@@ -12,7 +12,7 @@
         </div>
         <div>
           <div class="worker-name">{{ worker?.name }}</div>
-          <div class="worker-rate">{{ showEstimate ? formatCurrency(worker?.hourlyRate) : `S/. ${worker?.hourlyRate}` }}/hora</div>
+          <div class="worker-rate">{{ showEstimate ? formatCurrency(worker?.hourlyRate) : `S/. ${worker?.hourlyRate}` }}{{ t('search.perHour') }}</div>
         </div>
       </div>
 

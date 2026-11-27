@@ -9,7 +9,7 @@
     <div v-else-if="!bookings.length" class="card empty-state">
       <AppIcon name="calendar" :size="44" class="empty-icon" />
       <p class="empty-text">{{ t('dashboard.noBookings') }}</p>
-      <router-link to="/client/search" class="btn btn-primary submit-btn">Buscar trabajadoras</router-link>
+      <router-link to="/client/search" class="btn btn-primary submit-btn">{{ t('search.findWorkers') }}</router-link>
     </div>
 
     <!-- Display booking list -->

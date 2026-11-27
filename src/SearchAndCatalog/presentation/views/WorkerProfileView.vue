@@ -1,7 +1,7 @@
 <template>
   <div class="view-container max-w-4xl">
     <div v-if="loading" class="loader-wrapper"><div class="spinner spinner-lg"></div></div>
-    <div v-else-if="!worker" class="empty-state py-16"><p class="muted-text">Trabajadora no encontrada</p></div>
+    <div v-else-if="!worker" class="empty-state py-16"><p class="muted-text">{{ t('profile.notFound') }}</p></div>
     <div v-else>
       <button @click="$router.back()" class="btn btn-secondary btn-sm mb-4">← {{ t('common.back') }}</button>
 
