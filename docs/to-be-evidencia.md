@@ -80,8 +80,9 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | `booking_request_created` | El API confirma la reserva | `bookingId`, `serviceCategory`, `status`, `formId`, `registeredAmount`, `capturedBy` | `EC-BLQ06` |
 | `booking_request_failed` | El API rechaza la reserva o no responde | `errorType`, `platform`, `formId`, `capturedBy` | `EC-BLQ06` |
 | `review_submitted` | El API confirma la reseña | `bookingId`, `rating`, `isVerified`, `source`, `capturedBy` | — |
-| `experiment_exposure` | Se conecta en US41 y US34 | `location` | el expuesto |
-| `faq_viewed`, `faq_resolved` | Se conectan en US38 | `category`, `faqId` | `EC-BLQ04` |
+| `booking_estimate_viewed` | Primera vez que el formulario muestra un monto estimado (US41) | `formId`, `estimatedAmount` | `EC-BLQ06` |
+| `experiment_exposure` | Primera vez que el usuario llega al perfil (US34) o a la reserva (US41) con el experimento activo | `location` | `EC-BLQ02`, `EC-BLQ06` |
+| `faq_viewed`, `faq_resolved` | Abrir una pregunta o marcarla como resuelta en `/ayuda` (US38) | `category`, `faqId` | `EC-BLQ04` |
 
 - Propiedades comunes: `eventId`, `occurredAt`, `platform: "web"`, `environment`, `userRole`,
   `userRef` (la misma referencia seudónima de la app móvil) y `sessionId`; durante un
