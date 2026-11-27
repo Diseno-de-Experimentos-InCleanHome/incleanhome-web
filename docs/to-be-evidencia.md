@@ -274,3 +274,42 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | En revisión | Reclamo con tiempo hasta la primera revisión y las opciones de cambio de estado |
 | Cerrado | Reclamo resuelto con tiempos, historial abierto y sin controles de cambio |
 | Público | `/reclamos/seguimiento` de un reclamo cerrado (fechas y tiempo) y de uno abierto |
+
+## US38 — Soluciones a problemas frecuentes
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us38-soluciones-frecuentes` |
+| Commits | `fff5a9c` feat(web): US38 ofrece soluciones a problemas frecuentes antes del reclamo<br>`0fec3fc` test(web): US38 pruebas de la ayuda y su acceso al reclamo |
+| Pantallas afectadas | `/ayuda` (nueva), `/reclamos` |
+| Experimento | `EC-BLQ04` (activación por periodo, pública; sin grupo de control) |
+
+### Comportamiento
+
+- Encendido: `/reclamos` muestra la tarjeta "Antes de registrar un reclamo" que lleva a
+  `/ayuda`, como en la app móvil; el formulario sigue disponible en la misma pantalla.
+- `/ayuda`: preguntas por categoría (reservas, cuenta y acceso, prestadores/as y membresías).
+  "Sí, se resolvió" registra `faq_resolved` sin crear reclamo; "No, registrar un reclamo" abre
+  `/reclamos?categoria=<id>` con la categoría en "Servicio relacionado"; el enlace directo al
+  Libro de Reclamaciones está siempre visible.
+- Apagado o sin configuración: `/reclamos` sin cambios y `/ayuda` redirige a `/reclamos`.
+- Textos de la app móvil en lenguaje neutro. Se ajustaron a la web "Reservas" (en la app, "Mis
+  reservas") y la cancelación, que la web ofrece solo en reservas pendientes (la app también en
+  aceptadas).
+- Los eventos de una visita sin sesión quedan en la cola y se envían cuando alguien inicia
+  sesión en ese navegador, porque el API exige sesión.
+
+### Pruebas
+
+- `tests/support-faq.spec.js` (14): catálogo y textos, vista, eventos, flag y Libro de
+  Reclamaciones.
+- Resultado: `npm test` 265/265; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Encendido | `/reclamos` con la tarjeta "Antes de registrar un reclamo" |
+| Encendido | `/ayuda` con una pregunta abierta y, otra, tras "Sí, se resolvió" |
+| Encendido | `/reclamos` abierto desde "No, registrar un reclamo", con la categoría completada |
+| Apagado | `/reclamos` sin la tarjeta; `/ayuda` redirigiendo a `/reclamos` |
