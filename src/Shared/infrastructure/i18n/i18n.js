@@ -148,6 +148,15 @@ const messages = {
       confirm: "Confirmar reserva",
       hours: "horas",
       bookingSuccess: "¡Reserva creada exitosamente!",
+      estimate: {
+        title: "Monto estimado",
+        hourlyRate: "Tarifa por hora",
+        duration: "Duración",
+        total: "Total estimado",
+        hoursValue: "{hours} h",
+        invalid: "Elige un horario de al menos 30 minutos para ver el monto estimado.",
+        note: "Tarifa por hora × duración. Es un monto referencial; el pago se coordina fuera de la plataforma.",
+      },
       status: {
         pending: "Pendiente",
         accepted: "Aceptada",
@@ -243,6 +252,7 @@ const messages = {
       dateRequired: "Selecciona una fecha",
       notPast: "La fecha no puede estar en el pasado",
       timeAfter: "La hora de fin debe ser posterior a la de inicio",
+      minDuration: "La duración mínima de una reserva es de 30 minutos",
     },
     common: {
       save: "Guardar",
@@ -406,6 +416,15 @@ const messages = {
       confirm: "Confirm booking",
       hours: "hours",
       bookingSuccess: "Booking created successfully!",
+      estimate: {
+        title: "Estimated amount",
+        hourlyRate: "Hourly rate",
+        duration: "Duration",
+        total: "Estimated total",
+        hoursValue: "{hours} h",
+        invalid: "Choose a schedule of at least 30 minutes to see the estimated amount.",
+        note: "Hourly rate × duration. It is a reference amount; payment is coordinated outside the platform.",
+      },
       status: {
         pending: "Pending",
         accepted: "Accepted",
@@ -501,6 +520,7 @@ const messages = {
       dateRequired: "Select a date",
       notPast: "The date cannot be in the past",
       timeAfter: "End time must be after start time",
+      minDuration: "A booking must last at least 30 minutes",
     },
     common: {
       save: "Save",

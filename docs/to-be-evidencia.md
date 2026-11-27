@@ -121,3 +121,42 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | Apagado | Network: `POST /api/tracking/events` con respuesta `202` tras buscar y abrir un perfil; en el cuerpo, `platform: "web"` y `experimentId: null` |
 | Encendido (`EC-BLQ06`) | El mismo envío tras reservar: `booking_form_opened` y `booking_request_created` con el mismo `formId`, `experimentId`, `variant` y `featureActive` |
 | Sin red | Application → Local Storage → `inclean_tracking_outbox` con eventos pendientes y, al volver la red, la cola vacía |
+
+## US41 — Conocer el monto estimado antes de confirmar la reserva
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us41-monto-estimado` |
+| Commits | `baadd55` feat(web): US41 muestra el monto estimado antes de confirmar la reserva<br>`ea1f2f1` test(web): US41 pruebas de duración, redondeo y formulario de reserva |
+| Pantalla afectada | `/client/worker/:id/book` |
+| Experimento | `EC-BLQ06` (A/B, solo clientes) |
+| Endpoint | `POST /api/bookings/estimate` |
+
+### Comportamiento
+
+- Tratamiento: tarjeta "Monto estimado" con tarifa por hora, duración y total, en formato
+  `S/ 0.00`, que se recalcula al cambiar el horario, el servicio o la fecha.
+- Antes de elegir fecha se calcula en el navegador; con fecha se muestra la respuesta del API. Un
+  `400` muestra el motivo sin monto; si el API no responde, queda el cálculo local.
+- Control o experimento apagado: la tarjeta "Resumen" de siempre, sin llamadas al estimado.
+- En ambos casos las horas salen del horario con 2 decimales y la reserva exige 30 minutos. El
+  selector de la web ofrece horas enteras, así que hoy ningún horario válido queda por debajo.
+- Diferencia con la app móvil: la app calcula el estimado localmente; la web usa el endpoint. La
+  fórmula y el redondeo (medio céntimo al par) son los mismos.
+- `booking_estimate_viewed` (`formId`, `estimatedAmount`) una vez por formulario;
+  `experiment_exposure` con `location: "booking_form"` una vez por usuario, en ambos grupos;
+  `booking_request_created` suma `estimatedAmount` y `amountMatches`.
+
+### Pruebas
+
+- `tests/booking-estimate.spec.js` (31): duración y redondeo con los vectores del backend,
+  formateador, panel, eventos y flag apagado o en control.
+- Resultado: `npm test` 178/178; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Encendido (tratamiento) | Formulario con fecha elegida: tarjeta "Monto estimado" con tarifa, duración y total |
+| Encendido (tratamiento) | La misma tarjeta tras cambiar la hora de fin, y en Network el `POST /api/bookings/estimate` |
+| Apagado | El mismo formulario con la tarjeta "Resumen" |
