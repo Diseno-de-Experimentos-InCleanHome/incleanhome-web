@@ -18,6 +18,7 @@ import { useAuthStore } from "../src/IAM/application/auth.store.js";
 import { retryAfterSeconds } from "../src/IAM/domain/services/rate-limit.js";
 import LoginView from "../src/IAM/presentation/views/LoginView.vue";
 import TwoFactorVerifyView from "../src/IAM/presentation/views/TwoFactorVerifyView.vue";
+import TwoFactorSetupView from "../src/IAM/presentation/views/TwoFactorSetupView.vue";
 
 const failure = (status, data = {}, headers = {}) => ({ response: { status, data, headers } });
 // Forma del cuerpo que envía el API
@@ -58,11 +59,21 @@ const views = [
     await wrapper.find("input").setValue("123456");
     return { wrapper, submit: () => wrapper.find(".submit-btn").trigger("click") };
   }],
+  ["activación 2FA", async () => {
+    useAuthStore().challengeToken = "reto";
+    const wrapper = mount(TwoFactorSetupView, { global: { plugins: [i18n] } });
+    await flushPromises(); // el código QR se pide al abrir la pantalla
+    await wrapper.find("input").setValue("123456");
+    return { wrapper, submit: () => wrapper.find(".submit-btn").trigger("click") };
+  }],
 ];
 
 describe.each(views)("US39 - Pantalla de %s", (_, render) => {
   async function submitWith(error) {
-    post.mockRejectedValue(error);
+    // Solo falla el intento: preparar la activación del 2FA responde con normalidad.
+    post.mockImplementation((url) => (url === "/auth/2fa/setup"
+      ? Promise.resolve({ data: { qrCodeDataUrl: "data:image/png;base64,", secret: "SECRETO" } })
+      : Promise.reject(error)));
     const view = await render();
     await view.submit();
     await flushPromises();
