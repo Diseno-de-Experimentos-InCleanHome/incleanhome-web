@@ -235,3 +235,42 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | Normal | `/login` con credenciales erróneas: mensaje de siempre |
 | Límite | `/login` tras el sexto intento en un minuto: mensaje con los segundos, y en Network el `429` |
 | Límite 2FA | `/2fa-verify` tras el undécimo código en un minuto |
+
+## US36 — Seguimiento y tiempos de atención de reclamos
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us36-seguimiento-reclamos` |
+| Commits | `c75197f` feat(web): US36 muestra fechas, tiempos de atención y resumen de reclamos<br>`46da2be` test(web): US36 pruebas de tiempos, historial y resumen de reclamos |
+| Pantallas afectadas | `/admin/claims`, `/reclamos/seguimiento` |
+| Experimento | Ninguno (siempre activo) |
+| Endpoints | `GET /api/claims/{id}/history`, `GET /api/claims/summary?from=&to=` (administrador), `GET /api/claims`, `GET /api/claims/track/{code}` |
+
+### Comportamiento
+
+- Administrador: resumen por periodo (total, cantidad por estado, cerrados y promedio de
+  resolución); en cada reclamo, fecha de registro, tiempo hasta la primera revisión y hasta el
+  cierre, e historial de cambios con fecha, hora y responsable.
+- En revisión, la primera revisión se calcula con el historial; en los cerrados la entrega el
+  API. Los reclamos revisados antes de que existiera el historial muestran "Sin dato".
+- Resueltos y rechazados: sin selector ni nota editable. Se avisa de que cerrar es definitivo.
+- La nota actual aparece en el campo: al actualizar se reemplaza, así que ya no se borra por
+  enviar el campo vacío sin querer.
+- Seguimiento público: estado, fecha de registro y, si está cerrado, fecha de cierre y tiempo
+  hasta el cierre. El API público no entrega las fechas intermedias ni la primera revisión (el
+  historial es solo para el administrador), por lo que no se muestran.
+
+### Pruebas
+
+- `tests/claims-follow-up.spec.js` (34): estados y tiempos, panel del administrador y
+  seguimiento público.
+- Resultado: `npm test` 251/251; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Situación | Captura |
+|---|---|
+| Resumen | `/admin/claims`: tarjeta "Resumen por periodo" con un rango de fechas |
+| En revisión | Reclamo con tiempo hasta la primera revisión y las opciones de cambio de estado |
+| Cerrado | Reclamo resuelto con tiempos, historial abierto y sin controles de cambio |
+| Público | `/reclamos/seguimiento` de un reclamo cerrado (fechas y tiempo) y de uno abierto |

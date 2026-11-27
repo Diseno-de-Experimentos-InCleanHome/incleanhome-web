@@ -9,37 +9,48 @@
       </router-link>
 
       <div class="card card-elevated">
-        <h2 class="card-title">Seguimiento de reclamo</h2>
+        <h2 class="card-title">{{ t('claims.track.title') }}</h2>
         <p class="card-subtitle">
-          Ingresa el código que recibiste al registrar tu reclamo.
-          <router-link to="/reclamos" class="link-primary">¿Aún no tienes uno?</router-link>
+          {{ t('claims.track.subtitle') }}
+          <router-link to="/reclamos" class="link-primary">{{ t('claims.track.noCode') }}</router-link>
         </p>
 
         <form @submit.prevent="handleTrack" class="form">
           <div class="form-group">
-            <label class="label">Código de reclamo</label>
+            <label class="label">{{ t('claims.track.codeLabel') }}</label>
             <input v-model="code" type="text" class="input-field code-field" placeholder="RC-2026-000123" required />
           </div>
           <div v-if="error" class="error-box">{{ error }}</div>
           <button type="submit" class="btn btn-primary btn-full btn-lg submit-btn" :disabled="loading">
             <div v-if="loading" class="spinner spinner-sm"></div>
-            {{ loading ? "Buscando..." : "Consultar" }}
+            {{ loading ? t('claims.track.searching') : t('claims.track.submit') }}
           </button>
         </form>
 
         <div v-if="claim" class="result-box">
           <div class="result-row">
-            <span class="result-label">Tipo</span>
-            <span class="result-value">{{ claim.type === "reclamo" ? "Reclamo" : "Queja" }}</span>
+            <span class="result-label">{{ t('claims.track.type') }}</span>
+            <span class="result-value">{{ t(`claims.type.${claim.type === "reclamo" ? "reclamo" : "queja"}`) }}</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Estado</span>
+            <span class="result-label">{{ t('claims.track.status') }}</span>
             <span :class="statusBadge(claim.status)">{{ statusLabel(claim.status) }}</span>
           </div>
           <div class="result-row">
-            <span class="result-label">Registrado</span>
-            <span class="result-value">{{ formatDate(claim.createdAt) }}</span>
+            <span class="result-label">{{ t('claims.track.registered') }}</span>
+            <span class="result-value" data-test="registered">{{ dateTime(claim.createdAt) || "—" }}</span>
           </div>
+          <template v-if="isClosed(claim.status)">
+            <div class="result-row">
+              <span class="result-label">{{ t('claims.closedOn') }}</span>
+              <span class="result-value" data-test="closed-on">{{ dateTime(claim.resolvedAt) || t('claims.notAvailable') }}</span>
+            </div>
+            <div class="result-row">
+              <span class="result-label">{{ t('claims.toClosure') }}</span>
+              <span class="result-value" data-test="to-closure">{{ formatDuration(secondsToClosure(claim)) ?? t('claims.notAvailable') }}</span>
+            </div>
+          </template>
+          <p v-else class="open-note">{{ t('claims.track.open') }}</p>
           <div v-if="claim.adminNote" class="note-box">{{ claim.adminNote }}</div>
         </div>
       </div>
@@ -50,10 +61,15 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../../IAM/application/auth.store.js";
 import { ClaimsApi } from "../../infrastructure/claims.api.js";
 import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import { isClosed } from "../../domain/model/claim-status.value.js";
+import { formatDuration, secondsToClosure } from "../../domain/services/claim-times.js";
+import { formatDateTime, parseApiDate } from "../../../Shared/domain/format/dates.js";
 
+const { t, te, locale } = useI18n();
 const route = useRoute();
 const auth = useAuthStore();
 const homeLink = computed(() => (auth.isLoggedIn ? roleHomePath(auth.user?.role) : "/login"));
@@ -69,7 +85,7 @@ async function handleTrack() {
   try {
     claim.value = await ClaimsApi.track(code.value.trim());
   } catch (e) {
-    error.value = e.response?.status === 404 ? "No encontramos un reclamo con ese código" : "Ocurrió un error, intenta de nuevo";
+    error.value = t(e.response?.status === 404 ? "claims.track.notFound" : "claims.track.error");
   } finally {
     loading.value = false;
   }
@@ -79,11 +95,9 @@ function statusBadge(s) {
   return { registered: "badge badge-yellow", in_review: "badge badge-blue", resolved: "badge badge-green", rejected: "badge badge-red" }[s] || "badge badge-gray";
 }
 function statusLabel(s) {
-  return { registered: "Registrado", in_review: "En revisión", resolved: "Resuelto", rejected: "Rechazado" }[s] || s;
+  return te(`claims.status.${s}`) ? t(`claims.status.${s}`) : s;
 }
-function formatDate(iso) {
-  return iso ? new Date(iso).toLocaleDateString("es-PE", { year: "numeric", month: "short", day: "numeric" }) : "—";
-}
+const dateTime = (text) => formatDateTime(parseApiDate(text), locale.value);
 
 onMounted(() => {
   if (code.value) handleTrack();
@@ -112,6 +126,7 @@ onMounted(() => {
 .result-box { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #E6F9F2; display: flex; flex-direction: column; gap: 0.75rem; }
 .result-row { display: flex; align-items: center; justify-content: space-between; }
 .result-label { font-size: 0.8125rem; color: #7A8FA6; font-weight: 600; }
-.result-value { color: #1A2E4A; font-weight: 600; }
+.result-value { color: #1A2E4A; font-weight: 600; text-align: right; }
+.open-note { font-size: 0.875rem; color: #3A4A5C; }
 .note-box { font-size: 0.875rem; color: #3A4A5C; background: #E6F9F2; padding: 0.75rem; border-radius: 0.5rem; border: 1px solid #c5e8d8; }
 </style>
