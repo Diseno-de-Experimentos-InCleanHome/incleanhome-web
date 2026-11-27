@@ -121,7 +121,7 @@ describe("US42 - Perfil y reseñas", () => {
     await mountView(WorkerProfileView);
 
     expect(events("worker_profile_viewed")[0].properties).toEqual({ workerId: 3, platform: "web" });
-    expect(events("worker_reviews_viewed")[0].properties).toEqual({ workerId: 3, reviewCount: 1 });
+    expect(events("worker_reviews_viewed")[0].properties).toEqual({ workerId: 3, reviewCount: 1, verifiedCount: 0 });
   });
 
   it("testPerfil_ConElExperimentoActivoMarcaElEvento", async () => {
