@@ -63,7 +63,8 @@ import { useAuthErrorMessage } from "../composables/useAuthErrorMessage.js";
 
 const { t, locale } = useI18n();
 const router = useRouter();
-const errorMessage = useAuthErrorMessage();
+// En el inicio de sesión un 401 es un correo o una contraseña incorrectos; el API lo envía en inglés.
+const errorMessage = useAuthErrorMessage({ unauthorizedKey: "auth.invalidCredentials" });
 
 const form = ref({ email: "", password: "" });
 const loading = ref(false);
