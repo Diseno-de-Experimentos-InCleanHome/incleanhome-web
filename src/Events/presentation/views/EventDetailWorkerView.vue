@@ -24,7 +24,7 @@
           <div class="meta-item"><AppIcon name="clock" :size="16" /> {{ event.startTime }} – {{ event.endTime }} ({{ event.hours }}h)</div>
           <div class="meta-item"><AppIcon name="pin" :size="16" /> {{ t(`worker.zones.${event.zone}`) }} — {{ event.address }}</div>
           <div class="meta-item"><AppIcon name="users" :size="16" /> {{ event.acceptedCount }}/{{ event.workersNeeded }} {{ t('events.workersNeeded') }}</div>
-          <div class="meta-item"><AppIcon name="coin" :size="16" /> S/. {{ event.hourlyRateOffered }}/{{ t('search.perHour') }}</div>
+          <div class="meta-item"><AppIcon name="coin" :size="16" /> S/. {{ event.hourlyRateOffered }}{{ t('search.perHour') }}</div>
           <div class="meta-item"><AppIcon name="clock" :size="16" /> {{ t('events.applicationDeadline') }}: {{ formatDeadline(event.applicationDeadline) }}</div>
         </div>
       </div>

@@ -18,7 +18,7 @@
 
     <div class="event-footer">
       <span class="quota"><AppIcon name="users" :size="15" /> {{ event.acceptedCount }}/{{ event.workersNeeded }} {{ t('events.workersNeeded') }}</span>
-      <span class="rate">S/. {{ event.hourlyRateOffered }}/{{ t('search.perHour') }}</span>
+      <span class="rate">S/. {{ event.hourlyRateOffered }}{{ t('search.perHour') }}</span>
     </div>
   </router-link>
 </template>
