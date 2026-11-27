@@ -63,7 +63,10 @@
           <button v-for="i in 5" :key="i" @click="reviewForm.rating = i" class="rating-btn" :style="{ opacity: i <= reviewForm.rating ? 1 : 0.3 }">⭐</button>
         </div>
         <!-- Review comment textarea -->
-        <textarea v-model="reviewForm.comment" class="input-field mb-4" rows="3" placeholder="Escribe tu reseña..."></textarea>
+        <div class="mb-4">
+          <textarea v-model="reviewForm.comment" :class="['input-field', { 'input-error': errors.comment }]" rows="3" placeholder="Escribe tu reseña..." :maxlength="REVIEW_COMMENT_MAX" :aria-invalid="!!errors.comment" @blur="touch('comment')"></textarea>
+          <p v-if="errors.comment" class="field-error" role="alert">{{ errors.comment }}</p>
+        </div>
         <!-- Modal actions -->
         <div class="modal-actions">
           <button @click="reviewBooking = null" class="btn btn-secondary flex-1">{{ t('common.cancel') }}</button>
@@ -75,11 +78,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToastStore } from "../../../Shared/application/toast.store.js";
 import { BookingService } from "../../application/booking.service.js";
 import { ReviewService } from "../../../ReviewsAndEvaluation/application/review.service.js";
+import { REVIEW_COMMENT_MAX } from "../../../ReviewsAndEvaluation/domain/model/review.entity.js";
+import { required, maxLength } from "../../../Shared/domain/validation/validators.js";
+import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
 import { TrackingService } from "../../../Tracking/application/tracking.service.js";
 import { CAPTURED_BY_CLIENT, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
@@ -91,11 +97,17 @@ const loading = ref(true);
 const reviewBooking = ref(null);
 const reviewForm = ref({ rating: 0, comment: "" });
 
+const reviewSchema = computed(() => {
+  const message = t('validation.reviewComment', { max: REVIEW_COMMENT_MAX });
+  return { comment: [required(message), maxLength(REVIEW_COMMENT_MAX, message)] };
+});
+const { errors, touch, validateAll, resetErrors } = useFormValidation(reviewForm, reviewSchema);
+
 function statusBadge(s) {
   return { pending:"badge badge-yellow", accepted:"badge badge-blue", completed:"badge badge-green", rejected:"badge badge-red", cancelled:"badge badge-gray" }[s] || "badge badge-gray";
 }
 
-function openReview(b) { reviewBooking.value = b; reviewForm.value = { rating: 0, comment: "" }; }
+function openReview(b) { reviewBooking.value = b; reviewForm.value = { rating: 0, comment: "" }; resetErrors(); }
 
 async function cancelBooking(id) {
   await BookingService.cancel(id);
@@ -104,6 +116,7 @@ async function cancelBooking(id) {
 }
 
 async function submitReview() {
+  if (!validateAll()) return;
   try {
     const bookingId = reviewBooking.value.id;
     const review = await ReviewService.create({ bookingId, workerId: reviewBooking.value.workerId, ...reviewForm.value });

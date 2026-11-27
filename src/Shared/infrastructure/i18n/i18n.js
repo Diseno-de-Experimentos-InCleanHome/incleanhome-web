@@ -253,6 +253,7 @@ const messages = {
       notPast: "La fecha no puede estar en el pasado",
       timeAfter: "La hora de fin debe ser posterior a la de inicio",
       minDuration: "La duración mínima de una reserva es de 30 minutos",
+      reviewComment: "Escribe un comentario de 1 a {max} caracteres para enviar tu reseña",
     },
     common: {
       save: "Guardar",
@@ -521,6 +522,7 @@ const messages = {
       notPast: "The date cannot be in the past",
       timeAfter: "End time must be after start time",
       minDuration: "A booking must last at least 30 minutes",
+      reviewComment: "Write a comment of 1 to {max} characters to send your review",
     },
     common: {
       save: "Save",

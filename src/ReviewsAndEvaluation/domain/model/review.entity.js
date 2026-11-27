@@ -3,6 +3,9 @@
  * Capa: ReviewsAndEvaluation / domain / model
  * Incluye mapeo desde API (fromApi). Rating en escala 1-5.
  */
+/** El API exige un comentario de 1 a 1000 caracteres. */
+export const REVIEW_COMMENT_MAX = 1000;
+
 export class Review {
   constructor({ id, bookingId, workerId, clientId, clientName, rating, comment, createdAt }) {
     this.id         = id;
