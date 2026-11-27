@@ -132,7 +132,9 @@ onMounted(async () => {
     worker.value = w;
     availability.value = av;
     reviews.value = rv;
-  } catch { } finally { loading.value = false; }
+  } catch (error) {
+    console.error("No se pudo cargar el perfil del prestador", error);
+  } finally { loading.value = false; }
 });
 </script>
 

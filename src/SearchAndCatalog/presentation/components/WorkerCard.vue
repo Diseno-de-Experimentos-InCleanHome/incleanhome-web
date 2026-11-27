@@ -53,7 +53,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 const { t } = useI18n();
-const props = defineProps({ worker: Object });
+const props = defineProps({ worker: { type: Object, required: true } });
 
 const initials = computed(() => props.worker.name?.split(" ").map(n => n[0]).slice(0,2).join("").toUpperCase() || "?");
 const colors = ["#009960","#1A2E4A","#00B272","#00B272","#f59e0b","#ef4444"];

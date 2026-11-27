@@ -11,7 +11,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { marked } from "marked";
+import { renderSafeMarkdown } from "../../infrastructure/markdown.js";
 
 const props = defineProps({ src: { type: String, required: true } });
 
@@ -22,7 +22,7 @@ const loading = ref(true);
 onMounted(async () => {
   const res = await fetch(props.src);
   const markdown = await res.text();
-  html.value = marked.parse(markdown);
+  html.value = renderSafeMarkdown(markdown);
   loading.value = false;
 });
 </script>

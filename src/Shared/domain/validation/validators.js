@@ -37,7 +37,7 @@ export const LIMITS = {
 export const PATTERNS = {
   personName: /^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  peruPhone: /^(?:\+?51)?9\d{8}$/,
+  peruPhone: /^(?:\+51|51)?9\d{8}$/,
   document: /^\d{8,12}$/,
   totpCode: /^\d{6}$/,
   strongPassword: /^(?=.*[A-Za-z])(?=.*\d).{8,}$/,

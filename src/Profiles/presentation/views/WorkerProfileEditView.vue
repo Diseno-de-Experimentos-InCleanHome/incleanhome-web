@@ -151,7 +151,9 @@ onMounted(async () => {
     form.value = { name:profile.name, phone:profile.phone, age:profile.age,
       experienceYears:profile.experienceYears, hourlyRate:profile.hourlyRate,
       serviceTypes:profile.serviceTypes, zones:profile.zones, bio:profile.bio };
-  } catch {} finally { loading.value = false; }
+  } catch (loadError) {
+    error.value = loadError.response?.data?.error || t("common.error");
+  } finally { loading.value = false; }
 });
 </script>
 
