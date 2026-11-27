@@ -59,3 +59,65 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 | Apagado | Pestaña Network con `GET /api/experiments/config` y los experimentos en `enabled: false`, junto a `/client/search` sin cambios |
 | Encendido | La misma petición con `EC-BLQ06` en `enabled: true` y, en Application → Local Storage, las claves `inclean_experiments_config` e `inclean_variant.EC-BLQ06.<usuario>` (la segunda aparece al abrir la reserva, con US41) |
 | API caído | Detener el backend y recargar: la web sigue funcionando |
+
+## US42 — Registrar los eventos del plan de tracking
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us42-tracking-eventos` |
+| Commits | `bc4439f` feat(web): US42 registra y envía los eventos del plan de tracking<br>`0d1bd55` feat(web): US42 instrumenta búsqueda, perfil, reseñas y reserva<br>`8debc51` test(web): US42 pruebas de privacidad, envío y eventos de las pantallas |
+| Pantallas afectadas | `/client/search`, `/client/worker/:id`, `/client/worker/:id/book` y `/client/bookings` (sin cambios visibles) |
+| Endpoint | `POST /api/tracking/events` |
+
+### Eventos que envía la web
+
+| Evento | Cuándo | Propiedades | Experimento |
+|---|---|---|---|
+| `worker_search_performed` | El cliente cambia o limpia filtros (tras 800 ms sin cambios o al salir). El listado inicial no cuenta | `searchId`, `searchMode`, `serviceCategory`, `district`, `filtersApplied`, `resultsCount` | — |
+| `worker_profile_viewed` | Carga del perfil | `workerId`, `platform` | `EC-BLQ02` |
+| `worker_reviews_viewed` | Carga de las reseñas del perfil | `workerId`, `reviewCount` | `EC-BLQ02` |
+| `booking_form_opened` | Carga del formulario de reserva | `workerId`, `platform`, `formId` | `EC-BLQ06` |
+| `booking_request_created` | El API confirma la reserva | `bookingId`, `serviceCategory`, `status`, `formId`, `registeredAmount`, `capturedBy` | `EC-BLQ06` |
+| `booking_request_failed` | El API rechaza la reserva o no responde | `errorType`, `platform`, `formId`, `capturedBy` | `EC-BLQ06` |
+| `review_submitted` | El API confirma la reseña | `bookingId`, `rating`, `isVerified`, `source`, `capturedBy` | — |
+| `experiment_exposure` | Se conecta en US41 y US34 | `location` | el expuesto |
+| `faq_viewed`, `faq_resolved` | Se conectan en US38 | `category`, `faqId` | `EC-BLQ04` |
+
+- Propiedades comunes: `eventId`, `occurredAt`, `platform: "web"`, `environment`, `userRole`,
+  `userRef` (la misma referencia seudónima de la app móvil) y `sessionId`; durante un
+  experimento, `experimentId`, `variant` y `featureActive`. Con el experimento apagado esos tres
+  van en `null`, igual que en la app móvil y el API.
+- `capturedBy: "client"` va en los eventos cuyo plan lo admite; en los demás el API lo descartaría.
+- La web no envía `booking_status_changed`, `availability_updated` ni `message_sent`: los
+  registra el API.
+- `errorType` es `http_<estado>`, `network` o `unexpected`. El API no devuelve su código interno
+  (`invalid_duration`, `hours_mismatch`, `service_not_offered`) en la respuesta: lo registra él.
+- `review_submitted` no lleva experimento: la web no implementa el recordatorio de US35
+  (`EC-BLQ03`).
+
+### Cola y envío
+
+- Cola en `localStorage` (`inclean_tracking_outbox`, máximo 1000), envío en lotes de 100 dos
+  segundos después de registrar, al iniciar sesión, al recuperar la red y al ocultar la pestaña.
+- `202`: se eliminan. `400`: el lote se descarta (reenviarlo daría el mismo resultado). `401`: se
+  conservan hasta una sesión nueva. `503`, otros errores o sin red: reintento a los 5 s, 15 s,
+  60 s y luego cada 5 min.
+- Sin sesión no se envía. Los eventos anónimos salen con la referencia `anonymous:<sesión>` al
+  iniciar sesión; como el API no admite un rol vacío, les asigna el rol de esa cuenta.
+- Nunca se guardan contraseñas, tokens, direcciones, notas ni comentarios: solo sobreviven las
+  propiedades del plan con la forma esperada.
+
+### Pruebas
+
+- `tests/tracking-core.spec.js` (22): catálogo, privacidad, sobre del evento, duplicados,
+  lotes y reintentos.
+- `tests/tracking-views.spec.js` (12): eventos de las cuatro pantallas y exposición única.
+- Resultado: `npm test` 147/147; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado | Network: `POST /api/tracking/events` con respuesta `202` tras buscar y abrir un perfil; en el cuerpo, `platform: "web"` y `experimentId: null` |
+| Encendido (`EC-BLQ06`) | El mismo envío tras reservar: `booking_form_opened` y `booking_request_created` con el mismo `formId`, `experimentId`, `variant` y `featureActive` |
+| Sin red | Application → Local Storage → `inclean_tracking_outbox` con eventos pendientes y, al volver la red, la cola vacía |
