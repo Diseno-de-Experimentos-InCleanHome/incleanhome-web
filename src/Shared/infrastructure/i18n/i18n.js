@@ -454,6 +454,11 @@ const messages = {
         email: "No puede contener tu correo.",
       },
     },
+    reviewReminder: {
+      notFound: "No encontramos la reserva del recordatorio.",
+      alreadyReviewed: "Ya calificaste esa reserva.",
+      notCompleted: "Esa reserva todavía no se puede calificar.",
+    },
     validation: {
       required: "Este campo es obligatorio",
       nameRequired: "El nombre es obligatorio",
@@ -943,6 +948,11 @@ const messages = {
         common: "It is too common or predictable.",
         email: "It cannot contain your email.",
       },
+    },
+    reviewReminder: {
+      notFound: "We could not find the booking of the reminder.",
+      alreadyReviewed: "You already rated that booking.",
+      notCompleted: "That booking cannot be rated yet.",
     },
     validation: {
       required: "This field is required",

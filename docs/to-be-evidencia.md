@@ -449,3 +449,40 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 | Reporte enviado | Aviso de cambio de contraseña y acceso marcado |
 | Cambio de contraseña | Validación, contraseña actual incorrecta y éxito |
 | Sesión cerrada desde otro dispositivo | Inicio de sesión con el aviso |
+
+## US35 — Recordatorio para calificar
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us35-recordatorio-resena` |
+| Commits | `1415833` test(web): US35 captura Mis reservas para comprobar que no cambia sin el experimento<br>`515ee1b` feat(web): US35 abre la reseña desde el enlace del recordatorio y declara su origen<br>`bc0801a` test(web): US35 pruebas del enlace, el origen de la reseña y el regreso tras ingresar |
+| Pantallas afectadas | `/client/bookings?reviewBookingId=<id>&source=reminder`; destino tras `/login` |
+| Endpoints | `POST /api/reviews` con `source` |
+| Experimento | `EC-BLQ03` |
+| Eventos de tracking | `experiment_exposure` (`location: client_bookings`); `review_submitted` con `source` real y el experimento |
+
+### Comportamiento
+
+- En el tratamiento, el enlace del correo abre la reseña de esa reserva. Si ya está calificada,
+  no está completada o no es de la cuenta, lo explica con un aviso.
+- La reseña declara `source: "reminder"` solo si se abrió desde un enlace con `source=reminder`.
+  Abierta con el botón "Calificar" o con otro valor, declara `direct`.
+- Al cerrar o enviar la reseña se quitan `reviewBookingId` y `source` de la dirección.
+- Apagado o en control, el enlace se ignora y la reseña no envía `source` (el API lo deduce).
+- Sin sesión, o con la sesión vencida, tras ingresar se vuelve al enlace. La ruta se guarda en la
+  pestaña, solo para enlaces con `reviewBookingId` y solo si el rol coincide.
+
+### Pruebas
+
+- `tests/us35-screen-unchanged.spec.js` (3): sin experimento, apagado y en control, con el enlace
+  en la dirección, el marcado, las peticiones y el cuerpo de la reseña son los de antes.
+- `tests/review-reminder.spec.js` (26): enlace, origen, cierre, reservas no calificables, errores,
+  eventos, exposición, inglés y regreso tras iniciar sesión.
+- Resultado en `develop`: `npm test` 435/435; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado o control | Mis reservas abierta desde el enlace, sin reseña emergente |
+| Tratamiento | Reseña abierta desde el enlace, petición con `source` y aviso de reserva ya calificada |

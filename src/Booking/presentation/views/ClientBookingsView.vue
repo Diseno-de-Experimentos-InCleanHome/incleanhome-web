@@ -54,7 +54,7 @@
     </div>
 
     <!-- Review modal overlay -->
-    <div v-if="reviewBooking" class="modal-overlay" @click.self="reviewBooking = null">
+    <div v-if="reviewBooking" class="modal-overlay" @click.self="closeReview">
       <div class="modal-box">
         <h3 class="card-title">Calificar servicio</h3>
         <p class="muted-text mb-3">{{ reviewBooking.workerName }}</p>
@@ -69,7 +69,7 @@
         </div>
         <!-- Modal actions -->
         <div class="modal-actions">
-          <button @click="reviewBooking = null" class="btn btn-secondary flex-1">{{ t('common.cancel') }}</button>
+          <button @click="closeReview" class="btn btn-secondary flex-1">{{ t('common.cancel') }}</button>
           <button @click="submitReview" class="btn btn-primary flex-1" :disabled="!reviewForm.rating">Enviar</button>
         </div>
       </div>
@@ -80,6 +80,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { useToastStore } from "../../../Shared/application/toast.store.js";
 import { BookingService } from "../../application/booking.service.js";
 import { ReviewService } from "../../../ReviewsAndEvaluation/application/review.service.js";
@@ -89,13 +90,20 @@ import { useFormValidation } from "../../../Shared/presentation/composables/useF
 import AppIcon from "../../../Shared/presentation/components/AppIcon.vue";
 import { TrackingService } from "../../../Tracking/application/tracking.service.js";
 import { CAPTURED_BY_CLIENT, TrackingEventName } from "../../../Tracking/domain/model/tracking-plan.js";
+import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
 
 const { t } = useI18n();
 const toast = useToastStore();
+const route = useRoute();
+const router = useRouter();
+// US35: recordatorio para calificar.
+const reminder = useExperiment(ExperimentId.REVIEW_REMINDER);
 const bookings = ref([]);
 const loading = ref(true);
 const reviewBooking = ref(null);
 const reviewForm = ref({ rating: 0, comment: "" });
+const reviewSource = ref("direct"); // "reminder" si se llegó desde el correo
 
 const reviewSchema = computed(() => {
   const message = t('validation.reviewComment', { max: REVIEW_COMMENT_MAX });
@@ -107,7 +115,47 @@ function statusBadge(s) {
   return { pending:"badge badge-yellow", accepted:"badge badge-blue", completed:"badge badge-green", rejected:"badge badge-red", cancelled:"badge badge-gray" }[s] || "badge badge-gray";
 }
 
-function openReview(b) { reviewBooking.value = b; reviewForm.value = { rating: 0, comment: "" }; resetErrors(); }
+function openReview(b, source = "direct") {
+  reviewBooking.value = b;
+  reviewSource.value = source;
+  reviewForm.value = { rating: 0, comment: "" };
+  resetErrors();
+}
+
+function closeReview() {
+  reviewBooking.value = null;
+  clearReminderLink();
+}
+
+/** Quita el enlace del correo de la dirección para que no vuelva a abrir la reseña. */
+function clearReminderLink() {
+  if (!reminder.isActive.value || !route.query.reviewBookingId) return;
+  const query = { ...route.query };
+  delete query.reviewBookingId;
+  delete query.source;
+  router.replace({ path: route.path, query });
+}
+
+/** US35: abre la reseña de la reserva que indica el enlace del recordatorio. */
+async function openFromReminderLink() {
+  await reminder.whenReady();
+  TrackingService.recordExposure(ExperimentId.REVIEW_REMINDER, "client_bookings");
+  const { reviewBookingId, source } = route.query;
+  if (!reminder.isActive.value || !reviewBookingId || reviewBooking.value) return;
+
+  const booking = bookings.value.find((b) => b.id === Number(reviewBookingId));
+  let problem = null;
+  if (!booking) problem = "notFound";
+  else if (booking.hasReview) problem = "alreadyReviewed";
+  else if (booking.status !== "completed") problem = "notCompleted";
+
+  if (problem) {
+    toast.error(t(`reviewReminder.${problem}`));
+    clearReminderLink();
+    return;
+  }
+  openReview(booking, source === "reminder" ? "reminder" : "direct");
+}
 
 async function cancelBooking(id) {
   await BookingService.cancel(id);
@@ -119,15 +167,20 @@ async function submitReview() {
   if (!validateAll()) return;
   try {
     const bookingId = reviewBooking.value.id;
-    const review = await ReviewService.create({ bookingId, workerId: reviewBooking.value.workerId, ...reviewForm.value });
+    const source = reviewSource.value;
+    const review = await ReviewService.create({
+      bookingId, workerId: reviewBooking.value.workerId, ...reviewForm.value,
+      // Sin el experimento el API sigue deduciendo el origen.
+      ...(reminder.isActive.value && { source }),
+    });
     TrackingService.track(TrackingEventName.REVIEW_SUBMITTED, {
       bookingId,
       rating: review.rating,
       isVerified: review.isVerified,
-      source: "direct",
+      source,
       capturedBy: CAPTURED_BY_CLIENT,
-    }, { operationKey: `review:${bookingId}` });
-    reviewBooking.value = null;
+    }, { operationKey: `review:${bookingId}`, experimentId: ExperimentId.REVIEW_REMINDER });
+    closeReview();
     toast.success("¡Gracias por tu reseña!");
     await load();
   } catch (err) {
@@ -141,7 +194,10 @@ async function load() {
   loading.value = false;
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await openFromReminderLink();
+});
 </script>
 
 
