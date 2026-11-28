@@ -28,10 +28,11 @@ import { renderSafeMarkdown } from "../../../Shared/infrastructure/markdown.js";
 import { useAuthStore } from "../../application/auth.store.js";
 import { AuthenticationService } from "../../application/authentication.service.js";
 import { CURRENT_TERMS_VERSION } from "../../../Shared/domain/constants/terms.js";
-import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import { useSignInNavigation } from "../composables/useSignInNavigation.js";
 
 const { t } = useI18n();
 const router = useRouter();
+const pathAfterSignIn = useSignInNavigation();
 const auth = useAuthStore();
 
 const html = ref("");
@@ -67,7 +68,7 @@ async function handleAccept() {
     } else if (result.membershipPending) {
       router.push("/membership-pending");
     } else {
-      router.push(roleHomePath(result.user.role));
+      router.push(pathAfterSignIn(result));
     }
   } catch (e) {
     error.value = e.response?.data?.error || t('common.error');
