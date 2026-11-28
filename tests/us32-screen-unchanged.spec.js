@@ -18,6 +18,7 @@ vi.mock("../src/Shared/infrastructure/http/api.client.js", () => ({
 
 import i18n from "../src/Shared/infrastructure/i18n/i18n.js";
 import { useAuthStore } from "../src/IAM/application/auth.store.js";
+import { useExperimentStore } from "../src/Experiments/application/experiment.store.js";
 import WorkerProfileEditView from "../src/Profiles/presentation/views/WorkerProfileEditView.vue";
 import WorkerProfileView from "../src/SearchAndCatalog/presentation/views/WorkerProfileView.vue";
 
@@ -38,6 +39,7 @@ async function mountView(component, config) {
       "/reviews/worker/3": [],
     }[url],
   }));
+  await useExperimentStore().load(); // en la app lo pide main.js al iniciar
   const wrapper = mount(component, {
     global: { plugins: [i18n], stubs: { AppIcon: true, RouterLink: true } },
   });
