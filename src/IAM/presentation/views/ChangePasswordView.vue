@@ -129,7 +129,7 @@ onMounted(() => {
 .password-view.standalone { max-width: none; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; background: linear-gradient(135deg,#E6F9F2 0%,#E6F9F2 100%); }
 .password-card { width: 100%; max-width: 480px; padding: 2rem; }
 .page-title { font-size: 1.5rem; font-weight: 800; color: #1A2E4A; margin-bottom: 0.75rem; }
-.notice { background: #FFF7E6; color: #7A5C10; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; }
+.notice { background: #FFF7E6; color: #7A5C10; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; margin: 0 0 0.75rem; }
 .intro { color: #3A4A5C; font-size: 0.9375rem; margin: 0 0 1rem; }
 .password-form { display: flex; flex-direction: column; gap: 1rem; }
 .form-group { display: flex; flex-direction: column; gap: 0.25rem; }
