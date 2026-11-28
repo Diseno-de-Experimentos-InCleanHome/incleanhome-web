@@ -16,6 +16,7 @@ import { TrackingService } from "./Tracking/application/tracking.service.js";
 import apiClient from "./Shared/infrastructure/http/api.client.js";
 import { installSessionGuard } from "./IAM/application/session-guard.js";
 import { useAuthStore } from "./IAM/application/auth.store.js";
+import { rememberReturnPath } from "./IAM/application/return-path.js";
 import "./style.css";
 
 const app = createApp(App);
@@ -29,7 +30,10 @@ installSessionGuard({
   client: apiClient,
   onClosed: () => {
     useAuthStore(pinia).closeSession();
-    if (router.currentRoute.value.meta.requiresAuth) router.replace("/login");
+    const route = router.currentRoute.value;
+    if (!route.meta.requiresAuth) return;
+    rememberReturnPath(route); // US35: la sesión venció al abrir el enlace del correo
+    router.replace("/login");
   },
 });
 app.use(router);

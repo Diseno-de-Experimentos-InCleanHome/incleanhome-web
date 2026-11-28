@@ -8,6 +8,7 @@
  */
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "./IAM/application/auth.store.js";
+import { rememberReturnPath } from "./IAM/application/return-path.js";
 import { roleHomePath, roleAccountPath } from "./Shared/domain/constants/roles.js";
 
 /** US40 — seguridad de la cuenta, igual para los tres roles. */
@@ -154,7 +155,10 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.requiresAuth) {
-    if (!auth.isLoggedIn) return "/login";
+    if (!auth.isLoggedIn) {
+      rememberReturnPath(to); // US35: volver al enlace del correo tras ingresar
+      return "/login";
+    }
     if (to.meta.role && auth.user?.role !== to.meta.role) {
       const target = roleHomePath(auth.user?.role);
       if (to.path === target) { auth.clearAuth(); return "/login"; }
