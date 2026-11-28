@@ -283,6 +283,11 @@ const messages = {
       change: "{from} → {to}",
       changedBy: "Responsable: {admin}",
       notePlaceholder: "Nota del admin (opcional)",
+      noteEmailHint: "La nota de revisión se envía por correo al reclamante cuando cambias el estado del reclamo.",
+      book: {
+        subtitle: "Registra aquí tu reclamo o queja y haz seguimiento de su estado con el código que te entregamos al final. Cuando el estado cambie, te enviaremos un aviso de avance por correo mediante un proveedor externo.",
+        haveCode: "¿Ya tienes un código?",
+      },
       noteLabel: "Nota del admin",
       newStatus: "Nuevo estado",
       updateNote: "En revisión (actualizar nota)",
@@ -778,6 +783,11 @@ const messages = {
       change: "{from} → {to}",
       changedBy: "Responsible: {admin}",
       notePlaceholder: "Admin note (optional)",
+      noteEmailHint: "The review note is emailed to the claimant when you change the claim status.",
+      book: {
+        subtitle: "Register your claim or complaint here and follow its status with the code you get at the end. When the status changes, we will email you a progress notice through an external provider.",
+        haveCode: "Already have a code?",
+      },
       noteLabel: "Admin note",
       newStatus: "New status",
       updateNote: "In review (update note)",

@@ -45,7 +45,8 @@
         </div>
 
         <div v-else class="review-box">
-          <textarea v-model="notes[c.id]" class="input-field no-resize" rows="2" maxlength="1000" :aria-label="t('claims.noteLabel')" :placeholder="t('claims.notePlaceholder')"></textarea>
+          <textarea v-model="notes[c.id]" class="input-field no-resize" rows="2" maxlength="1000" :aria-label="t('claims.noteLabel')" :aria-describedby="c.consumerEmail ? `note-hint-${c.id}` : undefined" :placeholder="t('claims.notePlaceholder')"></textarea>
+          <p v-if="c.consumerEmail" :id="`note-hint-${c.id}`" class="note-hint" data-test="note-hint">{{ t('claims.noteEmailHint') }}</p>
           <p v-if="isClosed(targetStatus[c.id])" class="final-warning">{{ t('claims.finalWarning') }}</p>
           <div class="action-buttons">
             <select v-model="targetStatus[c.id]" class="input-field status-select" :aria-label="t('claims.newStatus')">
@@ -171,4 +172,5 @@ onMounted(load);
 .status-select { width: auto; }
 .closed-note { font-size: 0.8125rem; color: #3A4A5C; font-weight: 600; }
 .final-warning { font-size: 0.8125rem; color: #92400e; }
+.note-hint { font-size: 0.8125rem; color: #3A4A5C; }
 </style>
