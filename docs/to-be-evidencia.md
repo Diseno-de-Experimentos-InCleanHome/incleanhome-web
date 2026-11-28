@@ -412,7 +412,7 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 | Dato | Valor |
 |---|---|
 | Rama | `feature/us40-actividad-de-acceso` |
-| Commits | `682694a` feat(web): US40 actividad de la cuenta, cambio de contraseña y cierre ante sesiones cerradas<br>`c2dcc6f` test(web): US40 pruebas de la actividad, la contraseña y las sesiones cerradas<br>`4f42064` fix(web): US40 el acceso a Seguridad no desborda la barra de escritorio |
+| Commits | `682694a` feat(web): US40 actividad de la cuenta, cambio de contraseña y cierre ante sesiones cerradas<br>`c2dcc6f` test(web): US40 pruebas de la actividad, la contraseña y las sesiones cerradas<br>`4f42064` fix(web): US40 el acceso a Seguridad no desborda la barra de escritorio<br>`7dcd993` style(web): US40 distingue del fondo los avisos de éxito<br>`728c85a` style(web): US40 separa el aviso del cambio obligatorio |
 | Pantallas afectadas | `/client/account`, `/worker/account`, `/admin/account` y sus `/password`; `/change-password`; `/login`; enlace "Seguridad" en la barra de los tres roles (icono en escritorio, con texto en el menú) |
 | Endpoints | `GET /api/auth/access-activity`, `POST /api/auth/access-activity/{id}/report`, `PUT /api/auth/password`; `passwordChangeRequired` y `requiresPasswordChange` del inicio de sesión |
 | Experimento | Ninguno: la historia no tiene flag y la ve cualquier cuenta |
