@@ -150,7 +150,7 @@ onMounted(load);
 .access-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: #3A4A5C; }
 .reported { font-size: 0.875rem; font-weight: 600; color: #991b1b; }
 .alert { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; margin-bottom: 1rem; }
-.success-box { background: #E6F9F2; color: #00704a; }
+.success-box { background: white; border: 1px solid #009960; color: #00704a; }
 .error-box { background: #fee2e2; color: #991b1b; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
 .modal-box { background: white; border-radius: 1rem; padding: 1.5rem; width: 100%; max-width: 420px; }
