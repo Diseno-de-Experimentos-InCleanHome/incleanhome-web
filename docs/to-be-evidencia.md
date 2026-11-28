@@ -229,6 +229,9 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 - Resultado: `npm test` 217/217 al cerrar la primera rama y 281/281 al cerrar la segunda;
   `npm run build` correcto (Node 24).
 
+La barra del prestador/a pasa de siete a ocho enlaces: con más de siete usa menos espaciado. Antes
+del cambio ya sobresalía unos píxeles a 1500 px; ahora entra completa desde ese ancho.
+
 ### Capturas a tomar
 
 | Situación | Captura |
@@ -409,8 +412,8 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 | Dato | Valor |
 |---|---|
 | Rama | `feature/us40-actividad-de-acceso` |
-| Commits | `682694a` feat(web): US40 actividad de la cuenta, cambio de contraseña y cierre ante sesiones cerradas<br>`c2dcc6f` test(web): US40 pruebas de la actividad, la contraseña y las sesiones cerradas |
-| Pantallas afectadas | `/client/account`, `/worker/account`, `/admin/account` y sus `/password`; `/change-password`; `/login`; enlace "Seguridad" en la barra de los tres roles |
+| Commits | `682694a` feat(web): US40 actividad de la cuenta, cambio de contraseña y cierre ante sesiones cerradas<br>`c2dcc6f` test(web): US40 pruebas de la actividad, la contraseña y las sesiones cerradas<br>`4f42064` fix(web): US40 el acceso a Seguridad no desborda la barra de escritorio |
+| Pantallas afectadas | `/client/account`, `/worker/account`, `/admin/account` y sus `/password`; `/change-password`; `/login`; enlace "Seguridad" en la barra de los tres roles (icono en escritorio, con texto en el menú) |
 | Endpoints | `GET /api/auth/access-activity`, `POST /api/auth/access-activity/{id}/report`, `PUT /api/auth/password`; `passwordChangeRequired` y `requiresPasswordChange` del inicio de sesión |
 | Experimento | Ninguno: la historia no tiene flag y la ve cualquier cuenta |
 | Eventos de tracking | Ninguno: el plan de tracking no define eventos para US40 |
@@ -435,7 +438,8 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 - `tests/account-security.spec.js` (45): política, actividad, reporte, cambio con y sin sesión,
   avisos, rutas, destino tras el inicio de sesión e inglés.
 - `tests/session-guard.spec.js` (11): con el cliente HTTP real, qué `401` cierra la sesión.
-- Resultado: `npm test` 400/400 (344 anteriores y 56 de US40); `npm run build` correcto (Node 24).
+- `tests/top-nav.spec.js` (6): el enlace en los tres roles y el espaciado de la barra.
+- Resultado: `npm test` 406/406 (344 anteriores y 62 de US40); `npm run build` correcto (Node 24).
 
 ### Capturas a tomar
 

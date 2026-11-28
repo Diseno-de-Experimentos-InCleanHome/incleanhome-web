@@ -11,13 +11,14 @@
         </router-link>
 
         <!-- Desktop nav: full row, only shown once there's genuinely room for it -->
-        <div class="nav-menu">
+        <div :class="['nav-menu', { dense: navLinks.length > 7 }]">
           <router-link v-for="link in navLinks" :key="link.to" :to="link.to"
             class="nav-item"
             :class="{ 'active': $route.path.startsWith(link.to) }"
-            :aria-label="t(link.label)">
+            :aria-label="t(link.label)"
+            :title="link.iconOnly ? t(link.label) : undefined">
             <span v-html="link.icon" class="nav-icon"></span>
-            <span class="nav-label">{{ t(link.label) }}</span>
+            <span v-if="!link.iconOnly" class="nav-label">{{ t(link.label) }}</span>
           </router-link>
 
           <div class="nav-divider"></div>
@@ -181,6 +182,11 @@ function toggleLang() {
 
 .lang-btn { margin-left: 0.25rem; padding: 0.625rem 1rem; background-color: var(--color-bg); border: 1px solid var(--color-border); }
 .lang-btn:hover { background-color: white; }
+
+/* Con más de siete enlaces la fila no cabe en el ancho máximo con el espaciado normal. */
+.nav-menu.dense { gap: 0.125rem; }
+.dense .nav-item { padding-left: 0.625rem; padding-right: 0.625rem; }
+.dense .nav-divider { margin: 0 0.125rem; }
 
 /* ---------- Hamburger trigger: the default below 1500px ---------- */
 .hamburger-btn {
