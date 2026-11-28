@@ -365,3 +365,41 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 |---|---|
 | Apagado | `/worker/profile` sin la tarjeta |
 | Encendido | Tarjeta vacía, área guardada, radio fuera de rango y perfil visto por el cliente con la distancia |
+
+## US33 — Prestadores/as sugeridos por cercanía y disponibilidad
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us33-sugerencias-cercania` |
+| Commits | `bc624c1` test(web): US33 captura la reserva actual para comprobar que no cambia sin el experimento<br>`59d1827` feat(web): US33 sugiere prestadores cercanos y disponibles al reservar y declara el origen<br>`35e083c` test(web): US33 pruebas de las sugerencias, sus eventos y el origen de la reserva |
+| Pantallas afectadas | `/client/worker/:id/book` |
+| Endpoints | `GET /api/workers/suggestions`; `POST /api/bookings` con `origin` |
+| Experimento | `EC-BLQ01` |
+| Eventos de tracking | `experiment_exposure`, `worker_search_performed` (`searchMode: suggestion`), `worker_suggestions_shown`; `origin` y `searchId` en `booking_form_opened` y `booking_request_created` |
+
+### Comportamiento
+
+- En el tratamiento, la reserva suma "Prestadores/as sugeridos": con el servicio, la fecha y el
+  horario del formulario más el distrito, consulta hasta cinco y respeta el orden del API.
+- Sin resultados lo informa y enlaza a la búsqueda con filtros (US06).
+- Elegir a otra persona cambia a su reserva **sin perder** fecha, horario, dirección ni notas.
+- La reserva envía `origin: "suggestion"` solo si el prestador/a de la reserva fue elegido en las
+  sugerencias. En cualquier otro caso no se envía el campo.
+- Con `403` el bloque desaparece sin avisos y la reserva sigue como siempre.
+- Cambiar el servicio, la fecha, el horario o el distrito quita los resultados anteriores.
+- La dirección del servicio no se envía a la consulta ni entra en eventos.
+
+### Pruebas
+
+- `tests/us33-screen-unchanged.spec.js` (3): sin experimento, apagado y en control, el marcado, las
+  peticiones y el cuerpo de la reserva son los de antes de implementar.
+- `tests/worker-suggestions.spec.js` (21): contrato, resultados, validaciones, sin resultados,
+  `403`, errores, elección, origen, eventos, exposición e inglés.
+- Resultado: `npm test` 344/344 (320 anteriores y 24 de US33); `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado o control | Reserva sin el bloque de sugerencias |
+| Tratamiento | Sugerencias con distancia, sin resultados, reserva elegida y petición con `origin` |
