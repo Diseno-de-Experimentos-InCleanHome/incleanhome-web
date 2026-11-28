@@ -1,12 +1,12 @@
 # Capturas de evidencia To-Be
 
-84 capturas tomadas en un entorno **local**, con las ramas `develop` de la web y del backend: 57 el
-26/11/2026 y 27 (US32, US33, US35 y US40) el 27/11/2026. No se usó ningún ambiente de producción.
+91 capturas tomadas en un entorno **local**, con las ramas `develop` de la web y del backend: 57 el
+26/11/2026 y 34 (US32, US33, US35, US37 y US40) el 27/11/2026. No se usó ningún ambiente de producción.
 
 - Web: `http://localhost:5173` (proxy de `/api` hacia el API local).
 - API y Swagger: `http://localhost:5080` en `Development`, base PostgreSQL 18 `incleanhome_demo`.
   Las del 27/11 usan una copia desechable de esa base, para no alterar sus datos, con el backend en
-  `7101063` y la web en `1bdd537`.
+  `7101063` y la web en `1bdd537`; las de US37, con el código del API de `3ea3aa1`; las del administrador, el aviso simulado y el seguimiento, con la web en `e583a81`.
 - Para el `403` de US33 y el cambio obligatorio de US40, una segunda instancia del API en
   `http://localhost:5081` respondió esas peticiones de la web.
 - Ventana de 1280×800 con `deviceScaleFactor` 2 (imágenes de 2560×1600). Los archivos
@@ -99,6 +99,19 @@ No tiene flag propio: las capturas `-off` muestran que la pantalla no cambia con
 | [`us36-seguimiento-resuelto-on.png`](us36-seguimiento-resuelto-on.png) | Seguimiento público de un reclamo cerrado | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-573168` | US36 | Sin flag propio; todos los experimentos activos |
 | [`us36-seguimiento-resuelto-off.png`](us36-seguimiento-resuelto-off.png) | Seguimiento público de un reclamo cerrado | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-573168` | US36 | Sin flag propio; todos los experimentos apagados |
 
+### US37 — Aviso cuando un reclamo cambia de estado
+
+No tiene flag propio, por eso solo hay capturas `-on`. En la web solo cambiaron textos: el del formulario del Libro de Reclamaciones (las capturas de US38 muestran el anterior) y el aviso bajo la nota del panel. Las de "aviso" muestran como texto la salida real de la tabla `claim_notices` y del log del API local; no son pantallas de la aplicación. La simulada usa la configuración por defecto. Para la pendiente y la fallida se configuró el proveedor de correo con una dirección local inalcanzable y el reintento cada minuto (por defecto, 15). No se envió ningún correo.
+
+| Archivo | Pantalla | URL local | Historia | Flag |
+|---|---|---|---|---|
+| [`us37-admin-antes-cambio-on.png`](us37-admin-antes-cambio-on.png) | Administrador: reclamo registrado, con la nota y el nuevo estado antes de actualizar | `http://localhost:5173/admin/claims` | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-admin-cambio-estado-on.png`](us37-admin-cambio-estado-on.png) | Administrador: reclamo resuelto, con el cambio en el historial | `http://localhost:5173/admin/claims` | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-aviso-simulado-on.png`](us37-aviso-simulado-on.png) | Aviso simulado: fila en claim_notices y línea del log | Base y log del API local | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-seguimiento-desde-aviso-on.png`](us37-seguimiento-desde-aviso-on.png) | Seguimiento abierto desde el enlace del aviso, sin sesión | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-839259` | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-aviso-pendiente-on.png`](us37-aviso-pendiente-on.png) | Envío fallido: el cambio se conserva y el aviso queda pendiente | Base y log del API local | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-aviso-fallido-on.png`](us37-aviso-fallido-on.png) | Tres intentos sin éxito: el aviso queda como fallido | Base y log del API local | US37 | Sin flag propio; todos los experimentos activos |
+
 ### US38 — Soluciones a problemas frecuentes (`EC-BLQ04`)
 
 | Archivo | Pantalla | URL local | Historia | Flag |
@@ -151,9 +164,10 @@ No tiene flag propio, por eso solo hay capturas `-on`. La cuenta ficticia "Danie
 ## Swagger: endpoints nuevos y modificados
 
 Los de US34, US36, US39, US41, US42 y US43 se comparan con el commit `6af2c7f` del backend
-(anterior a las mejoras To-Be). Los de US32, US33, US35 y US40 se tomaron con `7101063`.
+(anterior a las mejoras To-Be). Los de US32, US33, US35 y US40 se tomaron con `7101063`; el de US37, con `3ea3aa1`.
 `us41-swagger-post-bookings-on.png` y `us34-swagger-post-reviews-on.png` son anteriores a los campos
-`origin` y `source`: el contrato actual está en las filas de US33 y US35.
+`origin` y `source`: el contrato actual está en las filas de US33 y US35. Lo mismo ocurre con
+`us36-swagger-patch-claims-id-review-on.png`, anterior al aviso de US37.
 
 La documentación del API no depende de los flags; el sufijo `-on` indica el estado con el que se
 tomó. En las tres filas de US42 marcadas como "solo registra evento", el cambio es interno y Swagger
@@ -175,6 +189,7 @@ se ve como antes.
 | [`us36-swagger-get-claims-summary-on.png`](us36-swagger-get-claims-summary-on.png) | Swagger: GET /api/claims/summary (nuevo) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
 | [`us36-swagger-patch-claims-id-review-on.png`](us36-swagger-patch-claims-id-review-on.png) | Swagger: PATCH /api/claims/{id}/review (modificado) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
 | [`us36-swagger-post-claims-on.png`](us36-swagger-post-claims-on.png) | Swagger: POST /api/claims (modificado) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
+| [`us37-swagger-patch-claims-id-review-on.png`](us37-swagger-patch-claims-id-review-on.png) | Swagger: PATCH /api/claims/{id}/review (modificado) | `http://localhost:5080/swagger/index.html` | US37 | No depende de flags |
 | [`us39-swagger-post-auth-2fa-enable-on.png`](us39-swagger-post-auth-2fa-enable-on.png) | Swagger: POST /api/auth/2fa/enable (modificado) | `http://localhost:5080/swagger/index.html` | US39 | No depende de flags |
 | [`us39-swagger-post-auth-2fa-verify-on.png`](us39-swagger-post-auth-2fa-verify-on.png) | Swagger: POST /api/auth/2fa/verify (modificado) | `http://localhost:5080/swagger/index.html` | US39 | No depende de flags |
 | [`us39-swagger-post-auth-login-on.png`](us39-swagger-post-auth-login-on.png) | Swagger: POST /api/auth/login (modificado) | `http://localhost:5080/swagger/index.html` | US39 | No depende de flags |
