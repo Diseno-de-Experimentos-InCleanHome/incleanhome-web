@@ -136,6 +136,6 @@ onMounted(() => {
 .label-bold { font-size: 0.875rem; font-weight: 600; color: #3A4A5C; }
 .hint { font-size: 0.75rem; color: #3A4A5C; margin: 0; }
 .alert { padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; }
-.success-box { background: #E6F9F2; color: #00704a; margin-bottom: 1rem; }
+.success-box { background: #E6F9F2; border: 1px solid #009960; color: #00704a; margin-bottom: 1rem; }
 .error-box { background: #fee2e2; color: #991b1b; }
 </style>
