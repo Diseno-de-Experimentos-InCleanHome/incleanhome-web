@@ -403,3 +403,45 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 |---|---|
 | Apagado o control | Reserva sin el bloque de sugerencias |
 | Tratamiento | Sugerencias con distancia, sin resultados, reserva elegida y petición con `origin` |
+
+## US40 — Actividad de acceso y cambio de contraseña
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us40-actividad-de-acceso` |
+| Commits | `682694a` feat(web): US40 actividad de la cuenta, cambio de contraseña y cierre ante sesiones cerradas<br>`c2dcc6f` test(web): US40 pruebas de la actividad, la contraseña y las sesiones cerradas |
+| Pantallas afectadas | `/client/account`, `/worker/account`, `/admin/account` y sus `/password`; `/change-password`; `/login`; enlace "Seguridad" en la barra de los tres roles |
+| Endpoints | `GET /api/auth/access-activity`, `POST /api/auth/access-activity/{id}/report`, `PUT /api/auth/password`; `passwordChangeRequired` y `requiresPasswordChange` del inicio de sesión |
+| Experimento | Ninguno: la historia no tiene flag y la ve cualquier cuenta |
+| Eventos de tracking | Ninguno: el plan de tracking no define eventos para US40 |
+
+### Comportamiento
+
+- La actividad muestra el estado del segundo factor y los accesos que entrega el API (hasta
+  diez) con fecha, hora, plataforma, resultado y si se verificó el segundo factor.
+- Reportar pide confirmación; el API cierra las demás sesiones y pide cambiar la contraseña. La
+  sesión actual sigue abierta y aparece el aviso con el acceso al cambio.
+- El cambio de contraseña repite en el formulario la política del API (mínimo 12 caracteres, entre
+  otras reglas) y muestra el motivo que devuelva el servidor. Con `429` indica la espera.
+- Con `passwordChangeRequired` en el inicio de sesión se abre la pantalla del cambio y el aviso
+  queda en todas las pantallas hasta cambiarla.
+- Con `requiresPasswordChange` (exigencia activada en el servidor) no se abre sesión:
+  `/change-password` usa el token de cambio y después hay que ingresar con la contraseña nueva.
+- Un `401` en una petición hecha con el token de la sesión la cierra en el navegador y lleva al
+  inicio de sesión con el aviso. Los `401` de los pasos del acceso no la cierran.
+
+### Pruebas
+
+- `tests/account-security.spec.js` (45): política, actividad, reporte, cambio con y sin sesión,
+  avisos, rutas, destino tras el inicio de sesión e inglés.
+- `tests/session-guard.spec.js` (11): con el cliente HTTP real, qué `401` cierra la sesión.
+- Resultado: `npm test` 400/400 (344 anteriores y 56 de US40); `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Situación | Captura |
+|---|---|
+| Actividad con accesos web y móvil | Lista, estado del segundo factor y confirmación del reporte |
+| Reporte enviado | Aviso de cambio de contraseña y acceso marcado |
+| Cambio de contraseña | Validación, contraseña actual incorrecta y éxito |
+| Sesión cerrada desde otro dispositivo | Inicio de sesión con el aviso |
