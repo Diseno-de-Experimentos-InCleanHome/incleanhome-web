@@ -502,3 +502,36 @@ No se comprobó en navegador: los estados apagado y control (los cubren las prue
 cambios), el envío real del correo de recordatorio ni ningún entorno de producción. Al abrir el
 enlace con una sesión vencida, la consola muestra el `401` sin capturar de la carga de reservas;
 la pantalla ya no lo capturaba antes de estas historias.
+
+## US37 — Aviso cuando un reclamo cambia de estado
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us37-textos-aviso-reclamos` |
+| Commits | `25a7d7a` feat(claims): US37 aclara que el aviso de avance de un reclamo se envía por correo |
+| Experimento | Ninguno |
+| Contrato | Sin cambios de peticiones: el envío ocurre en el backend |
+
+### Cambios
+
+- Libro de Reclamaciones (es/en): ya no dice "no se envía a terceros"; indica que el aviso de avance
+  se envía por correo mediante un proveedor externo.
+- Panel del administrador (es/en): bajo la nota de revisión se aclara que se envía por correo al
+  reclamante cuando cambia el estado. No aparece en reclamos cerrados ni sin correo.
+- Sin cambios en el formulario ni en el seguimiento: ya pedía y enviaba el correo, y
+  `/reclamos/seguimiento?code=<código>` ya consultaba al abrir (escenario 2, US24).
+
+### Pruebas
+
+- `tests/us37-claim-notice-texts.spec.js` (6): textos en ambos idiomas y casos sin aviso.
+- `tests/claims-follow-up.spec.js`: el seguimiento consulta el código del enlace.
+- Resultado: `npm test` 441/441; `npm run build` correcto (Node 24).
+
+### Limitaciones conocidas
+
+| Limitación | Efecto |
+|---|---|
+| El resto del Libro de Reclamaciones sigue solo en español | En inglés, la pantalla mezcla ambos idiomas |
+| El texto anuncia el correo aunque el backend use el envío simulado | Publicar la web junto con la activación del proveedor, o no saldrá ningún aviso |
+| La política de privacidad (v3, §1 y §2) dice que los datos de un reclamo son de uso interno y no se comparten con terceros | Contradice el envío por un proveedor: publicar una versión corregida antes de activarlo |
+
