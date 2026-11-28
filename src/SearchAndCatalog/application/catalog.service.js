@@ -11,8 +11,9 @@ export const CatalogService = {
     return raw.map(WorkerCatalogItem.fromApi);
   },
 
-  async getWorker(id) {
-    const raw = await CatalogApi.getById(id);
+  /** `district` (del cliente) es opcional: con él el API agrega la distancia aproximada. */
+  async getWorker(id, { district } = {}) {
+    const raw = await CatalogApi.getById(id, { district });
     return WorkerCatalogItem.fromApi(raw);
   },
 

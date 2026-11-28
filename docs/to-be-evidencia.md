@@ -229,6 +229,9 @@ Las pruebas usan un API simulado: no llaman a ningún servidor.
 - Resultado: `npm test` 217/217 al cerrar la primera rama y 281/281 al cerrar la segunda;
   `npm run build` correcto (Node 24).
 
+La barra del prestador/a pasa de siete a ocho enlaces: con más de siete usa menos espaciado. Antes
+del cambio ya sobresalía unos píxeles a 1500 px; ahora entra completa desde ese ancho.
+
 ### Capturas a tomar
 
 | Situación | Captura |
@@ -327,3 +330,208 @@ Rama `fix/auditoria-web`; pruebas en `tests/audit-fixes.spec.js` (10). Resultado
 | `48048b0` fix(web): usa lenguaje neutro en los textos visibles | Femenino genérico a "prestador/a" | Inicio de sesión, registro, búsqueda, perfil, reservas, eventos, mensajes | Login, registro y búsqueda |
 
 Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificaron.
+
+## US32 — Área de atención del prestador/a
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us32-area-de-atencion` |
+| Commits | `53cf498` test(web): US32 captura las pantallas actuales para comprobar que no cambian con el flag apagado<br>`c96ce5b` feat(web): US32 registra el área de atención y muestra el distrito y la distancia en el perfil<br>`c758939` test(web): US32 pruebas del área de atención y del perfil |
+| Pantallas afectadas | `/worker/profile` y `/client/worker/:id` |
+| Endpoints | `GET` y `PUT /api/workers/me/service-area`; `GET /api/workers/{id}?district=` |
+| Experimento | `EC-BLQ01-SA` (todo prestador/a mientras esté encendido) |
+| Eventos de tracking | Ninguno: el plan 8.2.8 no define eventos para esta historia |
+
+### Comportamiento
+
+- Con el experimento activo, el perfil del prestador/a suma la tarjeta "Área de atención": distrito
+  (lista cerrada de los 50 de Lima y Callao) y radio entero de 1 a 15 km, con guardado propio.
+- Fuera de rango o sin distrito no se envía y se comunica el rango. Si el servidor tiene otros
+  límites, se muestra su mensaje.
+- `404` en la consulta muestra el formulario vacío; `403` oculta la tarjeta.
+- El perfil que ve el cliente muestra el distrito base y la distancia aproximada **solo si el API
+  los envía** (con el experimento apagado llegan en `null`). No muestra radio ni dirección.
+- La distancia necesita el distrito del cliente: se elige en el mismo perfil, solo cuando hay
+  distrito base, y se recuerda en el navegador.
+
+### Pruebas
+
+- `tests/us32-screen-unchanged.spec.js` (4): con el flag apagado el marcado de las dos pantallas es
+  idéntico al capturado antes de implementar (`tests/__snapshots__/us32-*.html`).
+- `tests/service-area.spec.js` (32): distritos y radio, formulario, errores, `403`, textos en inglés
+  y perfil del cliente.
+- Resultado: `npm test` 320/320 (284 anteriores y 36 de US32); `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado | `/worker/profile` sin la tarjeta |
+| Encendido | Tarjeta vacía, área guardada, radio fuera de rango y perfil visto por el cliente con la distancia |
+
+## US33 — Prestadores/as sugeridos por cercanía y disponibilidad
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us33-sugerencias-cercania` |
+| Commits | `bc624c1` test(web): US33 captura la reserva actual para comprobar que no cambia sin el experimento<br>`59d1827` feat(web): US33 sugiere prestadores cercanos y disponibles al reservar y declara el origen<br>`35e083c` test(web): US33 pruebas de las sugerencias, sus eventos y el origen de la reserva |
+| Pantallas afectadas | `/client/worker/:id/book` |
+| Endpoints | `GET /api/workers/suggestions`; `POST /api/bookings` con `origin` |
+| Experimento | `EC-BLQ01` |
+| Eventos de tracking | `experiment_exposure`, `worker_search_performed` (`searchMode: suggestion`), `worker_suggestions_shown`; `origin` y `searchId` en `booking_form_opened` y `booking_request_created` |
+
+### Comportamiento
+
+- En el tratamiento, la reserva suma "Prestadores/as sugeridos": con el servicio, la fecha y el
+  horario del formulario más el distrito, consulta hasta cinco y respeta el orden del API.
+- Sin resultados lo informa y enlaza a la búsqueda con filtros (US06).
+- Elegir a otra persona cambia a su reserva **sin perder** fecha, horario, dirección ni notas.
+- La reserva envía `origin: "suggestion"` solo si el prestador/a de la reserva fue elegido en las
+  sugerencias. En cualquier otro caso no se envía el campo.
+- Con `403` el bloque desaparece sin avisos y la reserva sigue como siempre.
+- Cambiar el servicio, la fecha, el horario o el distrito quita los resultados anteriores.
+- La dirección del servicio no se envía a la consulta ni entra en eventos.
+
+### Pruebas
+
+- `tests/us33-screen-unchanged.spec.js` (3): sin experimento, apagado y en control, el marcado, las
+  peticiones y el cuerpo de la reserva son los de antes de implementar.
+- `tests/worker-suggestions.spec.js` (21): contrato, resultados, validaciones, sin resultados,
+  `403`, errores, elección, origen, eventos, exposición e inglés.
+- Resultado: `npm test` 344/344 (320 anteriores y 24 de US33); `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado o control | Reserva sin el bloque de sugerencias |
+| Tratamiento | Sugerencias con distancia, sin resultados, reserva elegida y petición con `origin` |
+
+## US40 — Actividad de acceso y cambio de contraseña
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us40-actividad-de-acceso` |
+| Commits | `682694a` feat(web): US40 actividad de la cuenta, cambio de contraseña y cierre ante sesiones cerradas<br>`c2dcc6f` test(web): US40 pruebas de la actividad, la contraseña y las sesiones cerradas<br>`4f42064` fix(web): US40 el acceso a Seguridad no desborda la barra de escritorio<br>`7dcd993` style(web): US40 distingue del fondo los avisos de éxito<br>`728c85a` style(web): US40 separa el aviso del cambio obligatorio |
+| Pantallas afectadas | `/client/account`, `/worker/account`, `/admin/account` y sus `/password`; `/change-password`; `/login`; enlace "Seguridad" en la barra de los tres roles (icono en escritorio, con texto en el menú) |
+| Endpoints | `GET /api/auth/access-activity`, `POST /api/auth/access-activity/{id}/report`, `PUT /api/auth/password`; `passwordChangeRequired` y `requiresPasswordChange` del inicio de sesión |
+| Experimento | Ninguno: la historia no tiene flag y la ve cualquier cuenta |
+| Eventos de tracking | Ninguno: el plan de tracking no define eventos para US40 |
+
+### Comportamiento
+
+- La actividad muestra el estado del segundo factor y los accesos que entrega el API (hasta
+  diez) con fecha, hora, plataforma, resultado y si se verificó el segundo factor.
+- Reportar pide confirmación; el API cierra las demás sesiones y pide cambiar la contraseña. La
+  sesión actual sigue abierta y aparece el aviso con el acceso al cambio.
+- El cambio de contraseña repite en el formulario la política del API (mínimo 12 caracteres, entre
+  otras reglas) y muestra el motivo que devuelva el servidor. Con `429` indica la espera.
+- Con `passwordChangeRequired` en el inicio de sesión se abre la pantalla del cambio y el aviso
+  queda en todas las pantallas hasta cambiarla.
+- Con `requiresPasswordChange` (exigencia activada en el servidor) no se abre sesión:
+  `/change-password` usa el token de cambio y después hay que ingresar con la contraseña nueva.
+- Un `401` en una petición hecha con el token de la sesión la cierra en el navegador y lleva al
+  inicio de sesión con el aviso. Los `401` de los pasos del acceso no la cierran.
+
+### Pruebas
+
+- `tests/account-security.spec.js` (45): política, actividad, reporte, cambio con y sin sesión,
+  avisos, rutas, destino tras el inicio de sesión e inglés.
+- `tests/session-guard.spec.js` (11): con el cliente HTTP real, qué `401` cierra la sesión.
+- `tests/top-nav.spec.js` (6): el enlace en los tres roles y el espaciado de la barra.
+- Resultado: `npm test` 406/406 (344 anteriores y 62 de US40); `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Situación | Captura |
+|---|---|
+| Actividad con accesos web y móvil | Lista, estado del segundo factor y confirmación del reporte |
+| Reporte enviado | Aviso de cambio de contraseña y acceso marcado |
+| Cambio de contraseña | Validación, contraseña actual incorrecta y éxito |
+| Sesión cerrada desde otro dispositivo | Inicio de sesión con el aviso |
+
+## US35 — Recordatorio para calificar
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us35-recordatorio-resena` |
+| Commits | `1415833` test(web): US35 captura Mis reservas para comprobar que no cambia sin el experimento<br>`515ee1b` feat(web): US35 abre la reseña desde el enlace del recordatorio y declara su origen<br>`bc0801a` test(web): US35 pruebas del enlace, el origen de la reseña y el regreso tras ingresar |
+| Pantallas afectadas | `/client/bookings?reviewBookingId=<id>&source=reminder`; destino tras `/login` |
+| Endpoints | `POST /api/reviews` con `source` |
+| Experimento | `EC-BLQ03` |
+| Eventos de tracking | `experiment_exposure` (`location: client_bookings`); `review_submitted` con `source` real y el experimento |
+
+### Comportamiento
+
+- En el tratamiento, el enlace del correo abre la reseña de esa reserva. Si ya está calificada,
+  no está completada o no es de la cuenta, lo explica con un aviso.
+- La reseña declara `source: "reminder"` solo si se abrió desde un enlace con `source=reminder`.
+  Abierta con el botón "Calificar" o con otro valor, declara `direct`.
+- Al cerrar o enviar la reseña se quitan `reviewBookingId` y `source` de la dirección.
+- Apagado o en control, el enlace se ignora y la reseña no envía `source` (el API lo deduce).
+- Sin sesión, o con la sesión vencida, tras ingresar se vuelve al enlace. La ruta se guarda en la
+  pestaña, solo para enlaces con `reviewBookingId` y solo si el rol coincide.
+
+### Pruebas
+
+- `tests/us35-screen-unchanged.spec.js` (3): sin experimento, apagado y en control, con el enlace
+  en la dirección, el marcado, las peticiones y el cuerpo de la reseña son los de antes.
+- `tests/review-reminder.spec.js` (26): enlace, origen, cierre, reservas no calificables, errores,
+  eventos, exposición, inglés y regreso tras iniciar sesión.
+- Resultado en `develop`: `npm test` 435/435; `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado o control | Mis reservas abierta desde el enlace, sin reseña emergente |
+| Tratamiento | Reseña abierta desde el enlace, petición con `source` y aviso de reserva ya calificada |
+
+## Verificación en navegador de US32, US33, US35 y US40
+
+Chrome contra el backend local (`develop` en `7101063`) sobre una copia desechable de la base
+demo, con los experimentos activos al 100 %. El contrato usado coincide con su Swagger.
+
+| Recorrido | Comprobaciones |
+|---|---|
+| US32, US33, US35 y US40: guardar y ver el área, reservar desde una sugerencia, calificar desde el enlace con y sin sesión, reportar un acceso y cambiar la contraseña | 22 correctas |
+| Barra superior de los tres roles a 390, 1499, 1500 y 1920 px, en español e inglés | 15 correctas |
+| Cambio obligatorio (`Security__EnforcePasswordChange=true`) | 4 correctas |
+
+No se comprobó en navegador: los estados apagado y control (los cubren las pruebas de pantalla sin
+cambios), el envío real del correo de recordatorio ni ningún entorno de producción. Al abrir el
+enlace con una sesión vencida, la consola muestra el `401` sin capturar de la carga de reservas;
+la pantalla ya no lo capturaba antes de estas historias.
+
+## US37 — Aviso cuando un reclamo cambia de estado
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us37-textos-aviso-reclamos` |
+| Commits | `25a7d7a` feat(claims): US37 aclara que el aviso de avance de un reclamo se envía por correo |
+| Experimento | Ninguno |
+| Contrato | Sin cambios de peticiones: el envío ocurre en el backend |
+
+### Cambios
+
+- Libro de Reclamaciones (es/en): ya no dice "no se envía a terceros"; indica que el aviso de avance
+  se envía por correo mediante un proveedor externo.
+- Panel del administrador (es/en): bajo la nota de revisión se aclara que se envía por correo al
+  reclamante cuando cambia el estado. No aparece en reclamos cerrados ni sin correo.
+- Sin cambios en el formulario ni en el seguimiento: ya pedía y enviaba el correo, y
+  `/reclamos/seguimiento?code=<código>` ya consultaba al abrir (escenario 2, US24).
+
+### Pruebas
+
+- `tests/us37-claim-notice-texts.spec.js` (6): textos en ambos idiomas y casos sin aviso.
+- `tests/claims-follow-up.spec.js`: el seguimiento consulta el código del enlace.
+- Resultado: `npm test` 441/441; `npm run build` correcto (Node 24).
+
+### Limitaciones conocidas
+
+| Limitación | Efecto |
+|---|---|
+| El resto del Libro de Reclamaciones sigue solo en español | En inglés, la pantalla mezcla ambos idiomas |
+| El texto anuncia el correo aunque el backend use el envío simulado | Publicar la web junto con la activación del proveedor, o no saldrá ningún aviso |
+| La política de privacidad (v3, §1 y §2) dice que los datos de un reclamo son de uso interno y no se comparten con terceros | Contradice el envío por un proveedor: publicar una versión corregida antes de activarlo |
+

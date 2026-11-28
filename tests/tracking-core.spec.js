@@ -40,6 +40,7 @@ describe("US42 - Catálogo y privacidad", () => {
   it("testPlan_IncluyeLasPropiedadesDelInforme", () => {
     const required = {
       worker_search_performed: ["serviceCategory", "filtersApplied", "resultsCount"],
+      worker_suggestions_shown: ["searchId", "suggestionCount"],
       worker_profile_viewed: ["workerId", "platform"],
       worker_reviews_viewed: ["workerId", "reviewCount"],
       availability_updated: ["workerId", "updatedDaysCount"],

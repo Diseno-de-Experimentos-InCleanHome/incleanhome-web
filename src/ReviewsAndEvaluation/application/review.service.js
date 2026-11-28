@@ -10,8 +10,9 @@ import { ReviewSummary } from "../domain/model/review-summary.value.js";
 export const ReviewSort = Object.freeze({ NEWEST: "newest", OLDEST: "oldest" });
 
 export const ReviewService = {
-  async create({ bookingId, workerId, rating, comment }) {
-    const raw = await ReviewApi.create({ bookingId, workerId, rating, comment });
+  /** `source` opcional (US35): "reminder" o "direct", según de dónde viene la reseña. */
+  async create({ bookingId, workerId, rating, comment, source }) {
+    const raw = await ReviewApi.create({ bookingId, workerId, rating, comment, ...(source && { source }) });
     return raw;
   },
 

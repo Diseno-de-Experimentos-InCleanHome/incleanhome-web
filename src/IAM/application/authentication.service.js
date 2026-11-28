@@ -14,7 +14,8 @@
  * auth flow (login, register, accept-terms) can hand control to the next
  * one instead of a real session — `handleAuthStep` normalizes that into a
  * single shape the views branch on: `{ requiresTermsAcceptance? }`,
- * `{ requires2fa? }`, `{ requires2faSetup? }`, `{ membershipPending? }`
+ * `{ requires2fa? }`, `{ requires2faSetup? }`, `{ requiresPasswordChange? }` (US40),
+ * `{ membershipPending? }`
  * (worker account awaiting manual payment validation — see auth.store's
  * `membershipMessage`), or `{ user }`.
  */
@@ -40,7 +41,21 @@ function handleAuthStep(data) {
     return handleMembershipPending(data);
   }
 
-  auth.setAuth(data.user, data.token);
+  return openSession(data);
+}
+
+/** Último paso del acceso: abre la sesión o, si el cambio es obligatorio, pide la contraseña. */
+function openSession(data) {
+  const auth = useAuthStore();
+
+  // US40: con la exigencia activada el API no entrega sesión hasta cambiar la contraseña.
+  if (data.requiresPasswordChange) {
+    auth.setChallengeToken(data.challengeToken);
+    return { requiresPasswordChange: true };
+  }
+
+  auth.setAuth(data.user, data.token, { passwordChangeRequired: data.passwordChangeRequired === true });
+  auth.clearChallengeToken();
   return { user: data.user };
 }
 
@@ -93,9 +108,7 @@ export const AuthenticationService = {
     const data = await AuthApi.enable2fa({ token: auth.challengeToken, code });
     if (data.membershipPending) return handleMembershipPending(data);
 
-    auth.setAuth(data.user, data.token);
-    auth.clearChallengeToken();
-    return { user: data.user };
+    return openSession(data);
   },
 
   /**
@@ -107,9 +120,7 @@ export const AuthenticationService = {
     const data = await AuthApi.verify2fa({ challengeToken: auth.challengeToken, code });
     if (data.membershipPending) return handleMembershipPending(data);
 
-    auth.setAuth(data.user, data.token);
-    auth.clearChallengeToken();
-    return { user: data.user };
+    return openSession(data);
   },
 
   logout() {

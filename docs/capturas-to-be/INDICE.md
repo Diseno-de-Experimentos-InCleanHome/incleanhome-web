@@ -1,10 +1,14 @@
 # Capturas de evidencia To-Be
 
-57 capturas tomadas el 26/11/2026 en un entorno **local**, con las ramas `develop` de la web y
-del backend. No se usó ningún ambiente de producción.
+91 capturas tomadas en un entorno **local**, con las ramas `develop` de la web y del backend: 57 el
+26/11/2026 y 34 (US32, US33, US35, US37 y US40) el 27/11/2026. No se usó ningún ambiente de producción.
 
 - Web: `http://localhost:5173` (proxy de `/api` hacia el API local).
 - API y Swagger: `http://localhost:5080` en `Development`, base PostgreSQL 18 `incleanhome_demo`.
+  Las del 27/11 usan una copia desechable de esa base, para no alterar sus datos, con el backend en
+  `7101063` y la web en `1bdd537`; las de US37, con el código del API de `3ea3aa1`; las del administrador, el aviso simulado y el seguimiento, con la web en `e583a81`.
+- Para el `403` de US33 y el cambio obligatorio de US40, una segunda instancia del API en
+  `http://localhost:5081` respondió esas peticiones de la web.
 - Ventana de 1280×800 con `deviceScaleFactor` 2 (imágenes de 2560×1600). Los archivos
   `*-historial-completo-*` y los de cada endpoint en Swagger son recortes de un elemento y tienen
   otro tamaño.
@@ -13,18 +17,7 @@ del backend. No se usó ningún ambiente de producción.
 - Todas las personas, correos, teléfonos, documentos, reservas, reseñas y reclamos son **ficticios**.
   Las fechas pasadas se asignaron directamente en la base local, porque el API no admite reservar en
   una fecha pasada.
-
-## Historias sin captura de pantalla
-
-| Historia | Experimento | Motivo |
-|---|---|---|
-| US32 — Área de atención del prestador/a | `EC-BLQ01-SA` | La web no tiene la pantalla y el backend no publica `/api/workers/me/service-area` |
-| US33 — Sugerencia de prestadores/as | `EC-BLQ01` | La web no tiene la pantalla y el backend no publica `/api/workers/suggestions` |
-| US35 — Recordatorio de calificación | `EC-BLQ03` | La web no tiene el recordatorio y el backend no tiene el envío |
-
-En estas tres historias, la web y el backend solo declaran el identificador del experimento y, en el
-backend, parte del plan de tracking. La app Android sí tiene interfaz para ellas; no forma parte de
-estas capturas. Activar o apagar sus flags no cambia ninguna pantalla de la web.
+- Ninguna captura muestra contraseñas, tokens ni secretos del segundo factor.
 
 ## Capturas repetidas tras dos arreglos
 
@@ -37,6 +30,30 @@ Estas tres se volvieron a tomar el 26/11/2026; las demás no cambiaron.
 | [`us39-login-credenciales-erroneas-off.png`](us39-login-credenciales-erroneas-off.png) | El error de credenciales sale en el idioma de la interfaz | Web `9cf0f9e` |
 
 ## Pantallas
+
+### US32 — Área de atención del prestador/a (`EC-BLQ01-SA`)
+
+Con el flag apagado el formulario no aparece y el API no envía el distrito del prestador/a. En el perfil público, la distancia se calcula al distrito que elige el cliente (Santiago de Surco).
+
+| Archivo | Pantalla | URL local | Historia | Flag |
+|---|---|---|---|---|
+| [`us32-perfil-propio-area-on.png`](us32-perfil-propio-area-on.png) | Perfil propio: "Área de atención" con distrito y radio guardados | `http://localhost:5173/worker/profile` | US32 | EC-BLQ01-SA activo (100 %) |
+| [`us32-perfil-propio-area-off.png`](us32-perfil-propio-area-off.png) | Perfil propio sin el formulario de área de atención | `http://localhost:5173/worker/profile` | US32 | EC-BLQ01-SA apagado |
+| [`us32-perfil-publico-distrito-on.png`](us32-perfil-publico-distrito-on.png) | Perfil público: distrito base y distancia aproximada al distrito elegido (Santiago de Surco) | `http://localhost:5173/client/worker/4` | US32 | EC-BLQ01-SA activo (100 %) |
+| [`us32-perfil-publico-distrito-off.png`](us32-perfil-publico-distrito-off.png) | Perfil público sin distrito base ni distancia | `http://localhost:5173/client/worker/4` | US32 | EC-BLQ01-SA apagado |
+
+### US33 — Prestadores/as sugeridos al reservar (`EC-BLQ01`)
+
+En `-off` también está apagado `EC-BLQ06`, por eso aparece la tarjeta "Resumen" en lugar de "Monto estimado".
+
+Caso `403`: la web cargó el experimento activo y la consulta de sugerencias la respondió un segundo API local con `EC-BLQ01` en control. El script comprobó la respuesta `403`, que la dirección escrita se conserva y que "Confirmar reserva" sigue habilitado. Llevan `-on` porque la web estaba con el flag activo.
+
+| Archivo | Pantalla | URL local | Historia | Flag |
+|---|---|---|---|---|
+| [`us33-reserva-sugerencias-on.png`](us33-reserva-sugerencias-on.png) | Reserva: "Prestadores/as sugeridos" por cercanía y disponibilidad (30/11, 08:00 a 10:00, Miraflores) | `http://localhost:5173/client/worker/4/book` | US33 | EC-BLQ01 activo (100 %) |
+| [`us33-reserva-sugerencias-off.png`](us33-reserva-sugerencias-off.png) | Reserva sin el bloque de sugerencias: dirección, resumen y confirmación | `http://localhost:5173/client/worker/4/book` | US33 | EC-BLQ01 apagado |
+| [`us33-reserva-403-antes-on.png`](us33-reserva-403-antes-on.png) | 403, antes: bloque de sugerencias listo para consultar | `http://localhost:5173/client/worker/4/book` | US33 | Web con EC-BLQ01 activo (100 %); la consulta la responde un segundo API local con EC-BLQ01 en control |
+| [`us33-reserva-403-bloque-oculto-on.png`](us33-reserva-403-bloque-oculto-on.png) | 403, después: el bloque desaparece sin avisos y la reserva sigue disponible | `http://localhost:5173/client/worker/4/book` | US33 | Web con EC-BLQ01 activo (100 %); la consulta la responde un segundo API local con EC-BLQ01 en control |
 
 ### US34 — Reseñas verificadas e historial del prestador/a (`EC-BLQ02`)
 
@@ -56,6 +73,15 @@ La cabecera del perfil se ve igual en ambos estados porque todas las reseñas de
 | [`us34-sin-resenas-on.png`](us34-sin-resenas-on.png) | Perfil de un prestador/a sin reseñas | `http://localhost:5173/client/worker/6` | US34 | EC-BLQ02 activo (100 %) |
 | [`us34-sin-resenas-off.png`](us34-sin-resenas-off.png) | Perfil de un prestador/a sin reseñas | `http://localhost:5173/client/worker/6` | US34 | EC-BLQ02 apagado |
 
+### US35 — Recordatorio para calificar (`EC-BLQ03`)
+
+Se abre el enlace que lleva el recordatorio, con la sesión del cliente ya iniciada. La reserva 7 está completada y sin reseña; no se envió ninguna reseña. No se envió ningún correo: el canal local es simulado.
+
+| Archivo | Pantalla | URL local | Historia | Flag |
+|---|---|---|---|---|
+| [`us35-enlace-recordatorio-on.png`](us35-enlace-recordatorio-on.png) | Enlace del recordatorio: se abre la reseña de la reserva 7 (Rosa Demo Quispe) | `http://localhost:5173/client/bookings?reviewBookingId=7&source=reminder` | US35 | EC-BLQ03 activo (100 %) |
+| [`us35-enlace-recordatorio-off.png`](us35-enlace-recordatorio-off.png) | Enlace del recordatorio ignorado: "Reservas" sin ventana de reseña | `http://localhost:5173/client/bookings?reviewBookingId=7&source=reminder` | US35 | EC-BLQ03 apagado |
+
 ### US36 — Seguimiento y tiempos de atención de reclamos
 
 No tiene flag propio: las capturas `-off` muestran que la pantalla no cambia con los experimentos apagados.
@@ -72,6 +98,19 @@ No tiene flag propio: las capturas `-off` muestran que la pantalla no cambia con
 | [`us36-seguimiento-en-revision-off.png`](us36-seguimiento-en-revision-off.png) | Seguimiento público de un reclamo abierto | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-194685` | US36 | Sin flag propio; todos los experimentos apagados |
 | [`us36-seguimiento-resuelto-on.png`](us36-seguimiento-resuelto-on.png) | Seguimiento público de un reclamo cerrado | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-573168` | US36 | Sin flag propio; todos los experimentos activos |
 | [`us36-seguimiento-resuelto-off.png`](us36-seguimiento-resuelto-off.png) | Seguimiento público de un reclamo cerrado | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-573168` | US36 | Sin flag propio; todos los experimentos apagados |
+
+### US37 — Aviso cuando un reclamo cambia de estado
+
+No tiene flag propio, por eso solo hay capturas `-on`. En la web solo cambiaron textos: el del formulario del Libro de Reclamaciones (las capturas de US38 muestran el anterior) y el aviso bajo la nota del panel. Las de "aviso" muestran como texto la salida real de la tabla `claim_notices` y del log del API local; no son pantallas de la aplicación. La simulada usa la configuración por defecto. Para la pendiente y la fallida se configuró el proveedor de correo con una dirección local inalcanzable y el reintento cada minuto (por defecto, 15). No se envió ningún correo.
+
+| Archivo | Pantalla | URL local | Historia | Flag |
+|---|---|---|---|---|
+| [`us37-admin-antes-cambio-on.png`](us37-admin-antes-cambio-on.png) | Administrador: reclamo registrado, con la nota y el nuevo estado antes de actualizar | `http://localhost:5173/admin/claims` | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-admin-cambio-estado-on.png`](us37-admin-cambio-estado-on.png) | Administrador: reclamo resuelto, con el cambio en el historial | `http://localhost:5173/admin/claims` | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-aviso-simulado-on.png`](us37-aviso-simulado-on.png) | Aviso simulado: fila en claim_notices y línea del log | Base y log del API local | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-seguimiento-desde-aviso-on.png`](us37-seguimiento-desde-aviso-on.png) | Seguimiento abierto desde el enlace del aviso, sin sesión | `http://localhost:5173/reclamos/seguimiento?code=RC-2026-839259` | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-aviso-pendiente-on.png`](us37-aviso-pendiente-on.png) | Envío fallido: el cambio se conserva y el aviso queda pendiente | Base y log del API local | US37 | Sin flag propio; todos los experimentos activos |
+| [`us37-aviso-fallido-on.png`](us37-aviso-fallido-on.png) | Tres intentos sin éxito: el aviso queda como fallido | Base y log del API local | US37 | Sin flag propio; todos los experimentos activos |
 
 ### US38 — Soluciones a problemas frecuentes (`EC-BLQ04`)
 
@@ -97,6 +136,21 @@ No tiene flag propio: las capturas `-off` muestran que el comportamiento no camb
 | [`us39-login-limite-on.png`](us39-login-limite-on.png) | Inicio de sesión: espera tras superar 5 intentos por minuto (429) | `http://localhost:5173/login` | US39 | Sin flag propio; todos los experimentos activos |
 | [`us39-login-limite-off.png`](us39-login-limite-off.png) | Inicio de sesión: espera tras superar 5 intentos por minuto (429) | `http://localhost:5173/login` | US39 | Sin flag propio; todos los experimentos apagados |
 
+### US40 — Actividad de acceso y cambio de contraseña
+
+No tiene flag propio, por eso solo hay capturas `-on`. La cuenta ficticia "Daniela Demo Torres" se creó solo para estas capturas. Los accesos "Móvil" los generó el script identificándose como la app Android (`User-Agent` de `okhttp`); no se usó la app. El script comprobó que, tras el reporte, la sesión móvil quedó cerrada (`401`). El cambio obligatorio depende de `Security__EnforcePasswordChange`, apagado por defecto: se tomó contra el segundo API local con la opción activada.
+
+| Archivo | Pantalla | URL local | Historia | Flag |
+|---|---|---|---|---|
+| [`us40-actividad-on.png`](us40-actividad-on.png) | Actividad de la cuenta: estado del segundo factor y accesos web y móvil, correctos y fallidos | `http://localhost:5173/client/account` | US40 | Sin flag propio; todos los experimentos activos |
+| [`us40-reporte-confirmacion-on.png`](us40-reporte-confirmacion-on.png) | Confirmación antes de reportar el acceso desde el móvil | `http://localhost:5173/client/account` | US40 | Sin flag propio; todos los experimentos activos |
+| [`us40-reporte-enviado-on.png`](us40-reporte-enviado-on.png) | Acceso reportado: aviso para cambiar la contraseña y confirmación | `http://localhost:5173/client/account` | US40 | Sin flag propio; todos los experimentos activos |
+| [`us40-sesion-cerrada-on.png`](us40-sesion-cerrada-on.png) | El otro navegador, tras el reporte: vuelve al inicio de sesión con el aviso | `http://localhost:5173/login` | US40 | Sin flag propio; todos los experimentos activos |
+| [`us40-cambio-contrasena-on.png`](us40-cambio-contrasena-on.png) | Cambio de contraseña con sesión (solicitado tras el reporte) | `http://localhost:5173/client/account/password` | US40 | Sin flag propio; todos los experimentos activos |
+| [`us40-cambio-contrasena-exito-on.png`](us40-cambio-contrasena-exito-on.png) | Contraseña cambiada: la sesión actual sigue abierta | `http://localhost:5173/client/account/password` | US40 | Sin flag propio; todos los experimentos activos |
+| [`us40-cambio-obligatorio-on.png`](us40-cambio-obligatorio-on.png) | Cambio obligatorio al iniciar sesión, antes de abrir sesión | `http://localhost:5173/change-password` | US40 | Sin flag propio; segundo API local con Security__EnforcePasswordChange=true |
+| [`us40-cambio-obligatorio-listo-on.png`](us40-cambio-obligatorio-listo-on.png) | Después del cambio obligatorio: se pide ingresar con la contraseña nueva | `http://localhost:5173/login` | US40 | Sin flag propio; segundo API local con Security__EnforcePasswordChange=true |
+
 ### US41 — Monto estimado antes de reservar (`EC-BLQ06`)
 
 | Archivo | Pantalla | URL local | Historia | Flag |
@@ -109,23 +163,39 @@ No tiene flag propio: las capturas `-off` muestran que el comportamiento no camb
 
 ## Swagger: endpoints nuevos y modificados
 
-Comparados con el commit `6af2c7f` del backend (anterior a las mejoras To-Be). La documentación del
-API no depende de los flags; el sufijo `-on` indica el estado con el que se tomó. En las tres filas de
-US42 marcadas como "solo registra evento", el cambio es interno y Swagger se ve como antes.
+Los de US34, US36, US39, US41, US42 y US43 se comparan con el commit `6af2c7f` del backend
+(anterior a las mejoras To-Be). Los de US32, US33, US35 y US40 se tomaron con `7101063`; el de US37, con `3ea3aa1`.
+`us41-swagger-post-bookings-on.png` y `us34-swagger-post-reviews-on.png` son anteriores a los campos
+`origin` y `source`: el contrato actual está en las filas de US33 y US35. Lo mismo ocurre con
+`us36-swagger-patch-claims-id-review-on.png`, anterior al aviso de US37.
+
+La documentación del API no depende de los flags; el sufijo `-on` indica el estado con el que se
+tomó. En las tres filas de US42 marcadas como "solo registra evento", el cambio es interno y Swagger
+se ve como antes.
 
 | Archivo | Pantalla | URL local | Historia | Flag |
 |---|---|---|---|---|
+| [`us32-swagger-get-workers-me-service-area-on.png`](us32-swagger-get-workers-me-service-area-on.png) | Swagger: GET /api/workers/me/service-area (nuevo) | `http://localhost:5080/swagger/index.html` | US32 | No depende de flags |
+| [`us32-swagger-put-workers-me-service-area-on.png`](us32-swagger-put-workers-me-service-area-on.png) | Swagger: PUT /api/workers/me/service-area (nuevo) | `http://localhost:5080/swagger/index.html` | US32 | No depende de flags |
+| [`us32-swagger-get-workers-id-on.png`](us32-swagger-get-workers-id-on.png) | Swagger: GET /api/workers/{id} (modificado) | `http://localhost:5080/swagger/index.html` | US32 | No depende de flags |
+| [`us33-swagger-get-workers-suggestions-on.png`](us33-swagger-get-workers-suggestions-on.png) | Swagger: GET /api/workers/suggestions (nuevo) | `http://localhost:5080/swagger/index.html` | US33 | No depende de flags |
+| [`us33-swagger-post-bookings-on.png`](us33-swagger-post-bookings-on.png) | Swagger: POST /api/bookings (modificado) | `http://localhost:5080/swagger/index.html` | US33 | No depende de flags |
 | [`us34-swagger-get-reviews-worker-id-on.png`](us34-swagger-get-reviews-worker-id-on.png) | Swagger: GET /api/reviews/worker/{id} (modificado) | `http://localhost:5080/swagger/index.html` | US34 | No depende de flags |
 | [`us34-swagger-get-reviews-worker-id-summary-on.png`](us34-swagger-get-reviews-worker-id-summary-on.png) | Swagger: GET /api/reviews/worker/{id}/summary (nuevo) | `http://localhost:5080/swagger/index.html` | US34 | No depende de flags |
 | [`us34-swagger-post-reviews-on.png`](us34-swagger-post-reviews-on.png) | Swagger: POST /api/reviews (modificado) | `http://localhost:5080/swagger/index.html` | US34 | No depende de flags |
+| [`us35-swagger-post-reviews-on.png`](us35-swagger-post-reviews-on.png) | Swagger: POST /api/reviews (modificado) | `http://localhost:5080/swagger/index.html` | US35 | No depende de flags |
 | [`us36-swagger-get-claims-on.png`](us36-swagger-get-claims-on.png) | Swagger: GET /api/claims (modificado) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
 | [`us36-swagger-get-claims-id-history-on.png`](us36-swagger-get-claims-id-history-on.png) | Swagger: GET /api/claims/{id}/history (nuevo) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
 | [`us36-swagger-get-claims-summary-on.png`](us36-swagger-get-claims-summary-on.png) | Swagger: GET /api/claims/summary (nuevo) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
 | [`us36-swagger-patch-claims-id-review-on.png`](us36-swagger-patch-claims-id-review-on.png) | Swagger: PATCH /api/claims/{id}/review (modificado) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
 | [`us36-swagger-post-claims-on.png`](us36-swagger-post-claims-on.png) | Swagger: POST /api/claims (modificado) | `http://localhost:5080/swagger/index.html` | US36 | No depende de flags |
+| [`us37-swagger-patch-claims-id-review-on.png`](us37-swagger-patch-claims-id-review-on.png) | Swagger: PATCH /api/claims/{id}/review (modificado) | `http://localhost:5080/swagger/index.html` | US37 | No depende de flags |
 | [`us39-swagger-post-auth-2fa-enable-on.png`](us39-swagger-post-auth-2fa-enable-on.png) | Swagger: POST /api/auth/2fa/enable (modificado) | `http://localhost:5080/swagger/index.html` | US39 | No depende de flags |
 | [`us39-swagger-post-auth-2fa-verify-on.png`](us39-swagger-post-auth-2fa-verify-on.png) | Swagger: POST /api/auth/2fa/verify (modificado) | `http://localhost:5080/swagger/index.html` | US39 | No depende de flags |
 | [`us39-swagger-post-auth-login-on.png`](us39-swagger-post-auth-login-on.png) | Swagger: POST /api/auth/login (modificado) | `http://localhost:5080/swagger/index.html` | US39 | No depende de flags |
+| [`us40-swagger-get-auth-access-activity-on.png`](us40-swagger-get-auth-access-activity-on.png) | Swagger: GET /api/auth/access-activity (nuevo) | `http://localhost:5080/swagger/index.html` | US40 | No depende de flags |
+| [`us40-swagger-post-auth-access-activity-id-report-on.png`](us40-swagger-post-auth-access-activity-id-report-on.png) | Swagger: POST /api/auth/access-activity/{id}/report (nuevo) | `http://localhost:5080/swagger/index.html` | US40 | No depende de flags |
+| [`us40-swagger-put-auth-password-on.png`](us40-swagger-put-auth-password-on.png) | Swagger: PUT /api/auth/password (nuevo) | `http://localhost:5080/swagger/index.html` | US40 | No depende de flags |
 | [`us41-swagger-post-bookings-on.png`](us41-swagger-post-bookings-on.png) | Swagger: POST /api/bookings (modificado) | `http://localhost:5080/swagger/index.html` | US41 | No depende de flags |
 | [`us41-swagger-post-bookings-estimate-on.png`](us41-swagger-post-bookings-estimate-on.png) | Swagger: POST /api/bookings/estimate (nuevo) | `http://localhost:5080/swagger/index.html` | US41 | No depende de flags |
 | [`us42-swagger-patch-bookings-id-status-on.png`](us42-swagger-patch-bookings-id-status-on.png) | Swagger: PATCH /api/bookings/{id}/status (modificado: solo registra evento; mismo contrato) | `http://localhost:5080/swagger/index.html` | US42 | No depende de flags |

@@ -15,6 +15,7 @@ export const CAPTURED_BY_CLIENT = "client";
 
 export const TrackingEventName = Object.freeze({
   WORKER_SEARCH_PERFORMED: "worker_search_performed",
+  WORKER_SUGGESTIONS_SHOWN: "worker_suggestions_shown",
   WORKER_PROFILE_VIEWED: "worker_profile_viewed",
   WORKER_REVIEWS_VIEWED: "worker_reviews_viewed",
   AVAILABILITY_UPDATED: "availability_updated",
@@ -35,6 +36,7 @@ const E = TrackingEventName;
 const ALLOWED_PROPERTIES = new Map([
   [E.WORKER_SEARCH_PERFORMED,
     ["serviceCategory", "filtersApplied", "resultsCount", "searchId", "searchMode", "district"]],
+  [E.WORKER_SUGGESTIONS_SHOWN, ["searchId", "suggestionCount"]],
   [E.WORKER_PROFILE_VIEWED, ["workerId", "platform", "source", "searchId"]],
   [E.WORKER_REVIEWS_VIEWED, ["workerId", "reviewCount", "verifiedCount"]],
   [E.AVAILABILITY_UPDATED, ["workerId", "updatedDaysCount", "capturedBy"]],
@@ -56,7 +58,7 @@ const ALLOWED_PROPERTIES = new Map([
 export const PROPERTY_KINDS = new Map([
   ["workerId", "integer"], ["bookingId", "integer"], ["resultsCount", "integer"],
   ["reviewCount", "integer"], ["verifiedCount", "integer"], ["updatedDaysCount", "integer"],
-  ["rating", "integer"],
+  ["rating", "integer"], ["suggestionCount", "integer"],
   ["estimatedAmount", "number"], ["registeredAmount", "number"],
   ["amountMatches", "boolean"], ["isVerified", "boolean"],
   ["formId", "identifier"], ["searchId", "identifier"], ["conversationId", "identifier"],

@@ -39,13 +39,14 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "../../application/auth.store.js";
 import { AuthenticationService } from "../../application/authentication.service.js";
-import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import { useSignInNavigation } from "../composables/useSignInNavigation.js";
 import { required, totpCode, blockNonDigits } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 import { useAuthErrorMessage } from "../composables/useAuthErrorMessage.js";
 
 const { t } = useI18n();
 const router = useRouter();
+const pathAfterSignIn = useSignInNavigation();
 const errorMessage = useAuthErrorMessage();
 const auth = useAuthStore();
 
@@ -74,7 +75,7 @@ async function handleVerify() {
       router.push("/membership-pending");
       return;
     }
-    router.push(roleHomePath(result.user.role));
+    router.push(pathAfterSignIn(result));
   } catch (e) {
     error.value = errorMessage(e);
   } finally {

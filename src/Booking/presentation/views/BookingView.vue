@@ -71,6 +71,12 @@
         <p v-if="errors.notes" class="field-error">{{ errors.notes }}</p>
       </div>
 
+      <!-- US33: prestadores/as sugeridos (tratamiento de EC-BLQ01) -->
+      <WorkerSuggestions v-if="showSuggestions" :service-type="form.serviceType" :date="selectedDate"
+        :start-time="form.startTime" :end-time="form.endTime" :hours="form.hours"
+        :selected-worker-id="suggestion?.workerId ?? null"
+        @select="chooseSuggestion" @unavailable="suggestionsUnavailable = true" />
+
       <BookingEstimatePanel v-if="showEstimate" :estimate="estimate" :error="estimateError" />
       <div v-else class="card summary-card">
         <h3 class="card-title mb-4">Resumen</h3>
@@ -87,7 +93,7 @@
 
       <div v-if="error" class="alert error-box">{{ error }}</div>
 
-      <button @click="handleBook" class="btn btn-primary btn-full btn-lg mt-4" :disabled="submitting">
+      <button @click="handleBook" class="btn btn-primary btn-full btn-lg mt-4" :disabled="submitting || switching">
         <div v-if="submitting" class="spinner spinner-sm"></div>
         {{ submitting ? t('common.loading') : t('booking.confirm') }}
       </button>
@@ -115,6 +121,7 @@ import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
 import { errorTypeOf } from "../../../Tracking/domain/services/error-type.js";
 import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
 import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
+import WorkerSuggestions from "../../../SearchAndCatalog/presentation/components/WorkerSuggestions.vue";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -125,13 +132,32 @@ const worker = ref(null);
 const workerLoading = ref(true);
 const submitting = ref(false);
 const error = ref("");
-// Un identificador por formulario abierto: une sus eventos.
-const formId = newId();
+// Un identificador por formulario abierto: une sus eventos. Cambia al pasar a otro prestador/a.
+const formId = ref(newId());
 
 function trackBooking(eventName, properties, operationKey) {
-  TrackingService.track(eventName, { formId, ...properties },
+  TrackingService.track(eventName, { formId: formId.value, ...properties },
     { operationKey, experimentId: ExperimentId.BOOKING_ESTIMATE });
 }
+
+// US33: sugerencias (tratamiento de EC-BLQ01). Con 403 la reserva sigue sin ellas.
+const { isActive: suggestionsActive } = useExperiment(ExperimentId.WORKER_SUGGESTIONS);
+const suggestionsUnavailable = ref(false);
+const showSuggestions = computed(() => suggestionsActive.value && !suggestionsUnavailable.value);
+const picked = ref(null); // { workerId, searchId } elegido desde las sugerencias
+const suggestion = computed(() => (picked.value?.workerId === Number(route.params.id) ? picked.value : null));
+/** Origen de la reserva para los eventos; sin sugerencia no se declara ninguno. */
+const originProperties = () => (suggestion.value
+  ? { origin: "suggestion", searchId: suggestion.value.searchId }
+  : {});
+
+function chooseSuggestion(choice) {
+  picked.value = choice;
+  if (choice.workerId !== Number(route.params.id)) router.push(`/client/worker/${choice.workerId}/book`);
+}
+
+// Mientras se carga el prestador/a elegido no se puede confirmar con los datos del anterior.
+const switching = ref(false);
 
 const today = new Date();
 const viewYear = ref(today.getFullYear());
@@ -191,9 +217,9 @@ const { estimate, error: estimateError } = useBookingEstimate({
 });
 
 // La primera vez que el cliente ve un monto en este formulario.
-watch([showEstimate, estimate], ([visible, amount]) => {
-  if (!visible || !amount) return;
-  trackBooking(TrackingEventName.BOOKING_ESTIMATE_VIEWED, { estimatedAmount: amount.totalAmount }, formId);
+watch([showEstimate, estimate, switching], ([visible, amount, loadingWorker]) => {
+  if (!visible || !amount || loadingWorker) return;
+  trackBooking(TrackingEventName.BOOKING_ESTIMATE_VIEWED, { estimatedAmount: amount.totalAmount }, formId.value);
 }, { immediate: true });
 
 /** Monto que se compara con el registrado: el mostrado o, en control, el mismo cálculo. */
@@ -203,7 +229,7 @@ function expectedAmount() {
   return (shown ?? BookingPricingService.estimate(worker.value?.hourlyRate, startTime, endTime))?.totalAmount;
 }
 async function handleBook() {
-  if (!validateAll()) return;
+  if (switching.value || !validateAll()) return;
   submitting.value = true;
   error.value = "";
   const estimatedAmount = expectedAmount();
@@ -218,6 +244,7 @@ async function handleBook() {
       hours: form.value.hours,
       address: form.value.address,
       notes: form.value.notes,
+      ...(suggestion.value && { origin: "suggestion" }),
     });
     trackBooking(TrackingEventName.BOOKING_REQUEST_CREATED, {
       bookingId: booking.id,
@@ -226,6 +253,7 @@ async function handleBook() {
       estimatedAmount,
       registeredAmount: booking.totalAmount,
       amountMatches: estimatedAmount === undefined ? undefined : estimatedAmount === booking.totalAmount,
+      ...originProperties(),
       capturedBy: CAPTURED_BY_CLIENT,
     }, `booking:${booking.id}`);
     toast.success(t("booking.bookingSuccess"));
@@ -237,15 +265,48 @@ async function handleBook() {
   } finally { submitting.value = false; }
 }
 
+/** Muestra al prestador/a y conserva el servicio elegido si también lo ofrece. */
+function showWorker(w) {
+  worker.value = w;
+  if (w.serviceTypes?.length && !w.serviceTypes.includes(form.value.serviceType)) {
+    form.value.serviceType = w.serviceTypes[0];
+  }
+}
+
+function trackFormOpened(id) {
+  trackBooking(TrackingEventName.BOOKING_FORM_OPENED,
+    { workerId: Number(id), platform: PLATFORM, ...originProperties() }, formId.value);
+}
+
+// Al elegir una sugerencia cambia la ruta, pero el formulario se mantiene.
+watch(() => route.params.id, async (id) => {
+  if (!id || !worker.value) return;
+  if (Number(id) === worker.value.id) { // de vuelta a quien ya está en pantalla
+    if (switching.value) error.value = "";
+    switching.value = false;
+    return;
+  }
+  switching.value = true;
+  error.value = "";
+  try {
+    const w = await CatalogService.getWorker(id);
+    if (route.params.id !== id) return; // ya se eligió a otra persona
+    showWorker(w);
+    formId.value = newId();
+    switching.value = false;
+    trackFormOpened(id);
+  } catch (e) {
+    error.value = e.response?.data?.error || t("common.error");
+  }
+});
+
 onMounted(async () => {
   TrackingService.recordExposure(ExperimentId.BOOKING_ESTIMATE, "booking_form");
+  TrackingService.recordExposure(ExperimentId.WORKER_SUGGESTIONS, "booking_form");
   const id = route.params.id;
-  const w = await CatalogService.getWorker(id);
-  worker.value = w;
-  if (w.serviceTypes?.length) form.value.serviceType = w.serviceTypes[0];
+  showWorker(await CatalogService.getWorker(id));
   workerLoading.value = false;
-  trackBooking(TrackingEventName.BOOKING_FORM_OPENED,
-    { workerId: Number(id), platform: PLATFORM }, formId);
+  trackFormOpened(id);
 });
 </script>
 

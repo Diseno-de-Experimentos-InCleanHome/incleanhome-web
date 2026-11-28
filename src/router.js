@@ -8,7 +8,14 @@
  */
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "./IAM/application/auth.store.js";
-import { roleHomePath } from "./Shared/domain/constants/roles.js";
+import { rememberReturnPath } from "./IAM/application/return-path.js";
+import { roleHomePath, roleAccountPath } from "./Shared/domain/constants/roles.js";
+
+/** US40 — seguridad de la cuenta, igual para los tres roles. */
+const accountRoutes = () => [
+  { path: "account",          component: () => import("./IAM/presentation/views/AccountActivityView.vue") },
+  { path: "account/password", component: () => import("./IAM/presentation/views/ChangePasswordView.vue") },
+];
 
 const routes = [
   // ──────────────────────────────────────────────────
@@ -21,6 +28,8 @@ const routes = [
   { path: "/2fa-setup",        component: () => import("./IAM/presentation/views/TwoFactorSetupView.vue"),  meta: { public: true } },
   { path: "/2fa-verify",       component: () => import("./IAM/presentation/views/TwoFactorVerifyView.vue"), meta: { public: true } },
   { path: "/terms",            component: () => import("./Shared/presentation/views/TermsView.vue"),        meta: { public: true } },
+  // US40 — cambio de contraseña obligatorio, antes de abrir sesión
+  { path: "/change-password",  component: () => import("./IAM/presentation/views/ChangePasswordView.vue"),  meta: { public: true } },
   { path: "/privacy",          component: () => import("./Shared/presentation/views/PrivacyView.vue"),      meta: { public: true } },
   { path: "/membership-pending", component: () => import("./Memberships/presentation/views/MembershipPendingView.vue"), meta: { public: true } },
 
@@ -60,6 +69,9 @@ const routes = [
 
       // Profiles
       { path: "profile",         component: () => import("./Profiles/presentation/views/ClientProfileView.vue") },
+
+      // IAM
+      ...accountRoutes(),
     ],
   },
 
@@ -92,6 +104,9 @@ const routes = [
       // Shared — mensajería
       { path: "messages",         component: () => import("./Shared/presentation/views/MessagesView.vue") },
       { path: "messages/:userId", component: () => import("./Shared/presentation/views/ChatView.vue") },
+
+      // IAM
+      ...accountRoutes(),
     ],
   },
 
@@ -110,6 +125,9 @@ const routes = [
 
       // Claims
       { path: "claims", component: () => import("./Claims/presentation/views/AdminClaimsView.vue") },
+
+      // IAM
+      ...accountRoutes(),
     ],
   },
 ];
@@ -129,11 +147,18 @@ router.beforeEach((to) => {
     if (auth.isLoggedIn && to.path === "/login") {
       return roleHomePath(auth.user?.role);
     }
+    // US40: con sesión, el cambio de contraseña es la pantalla de la cuenta.
+    if (auth.isLoggedIn && to.path === "/change-password") {
+      return `${roleAccountPath(auth.user?.role)}/password`;
+    }
     return true;
   }
 
   if (to.meta.requiresAuth) {
-    if (!auth.isLoggedIn) return "/login";
+    if (!auth.isLoggedIn) {
+      rememberReturnPath(to); // US35: volver al enlace del correo tras ingresar
+      return "/login";
+    }
     if (to.meta.role && auth.user?.role !== to.meta.role) {
       const target = roleHomePath(auth.user?.role);
       if (to.path === target) { auth.clearAuth(); return "/login"; }

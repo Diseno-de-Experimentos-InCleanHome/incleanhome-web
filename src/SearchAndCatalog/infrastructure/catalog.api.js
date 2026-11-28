@@ -11,8 +11,10 @@ export const CatalogApi = {
     const { data } = await apiClient.get("/workers", { params });
     return data;
   },
-  async getById(id) {
-    const { data } = await apiClient.get(`/workers/${id}`);
+  async getById(id, { district } = {}) {
+    const { data } = district
+      ? await apiClient.get(`/workers/${id}`, { params: { district } })
+      : await apiClient.get(`/workers/${id}`);
     return data;
   },
   async getAvailability(workerId) {

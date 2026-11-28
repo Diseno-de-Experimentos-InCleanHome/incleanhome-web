@@ -25,11 +25,9 @@
           </aside>
 
           <h2 class="card-title">Libro de reclamaciones</h2>
-          <p class="card-subtitle">
-            Registra aquí tu reclamo o queja. Es un registro interno — no se envía a
-            terceros — y podrás hacer seguimiento del estado con el código que te
-            entregamos al final.
-            <router-link to="/reclamos/seguimiento" class="link-primary">¿Ya tienes un código?</router-link>
+          <p class="card-subtitle" data-test="claim-subtitle">
+            {{ t('claims.book.subtitle') }}
+            <router-link to="/reclamos/seguimiento" class="link-primary">{{ t('claims.book.haveCode') }}</router-link>
           </p>
 
           <form @submit.prevent="handleSubmit" class="form" novalidate>

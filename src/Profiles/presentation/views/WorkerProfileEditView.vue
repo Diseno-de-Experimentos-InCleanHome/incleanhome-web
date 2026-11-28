@@ -83,6 +83,9 @@
         </button>
       </div>
     </div>
+
+    <!-- US32: distrito base y radio de atención (EC-BLQ01-SA) -->
+    <ServiceAreaForm v-if="showServiceArea && !loading" />
   </div>
 </template>
 
@@ -99,10 +102,14 @@ import {
   integer, numeric, min, max, minItems, blockNonDigits,
 } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
+import ServiceAreaForm from "../components/ServiceAreaForm.vue";
+import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
+import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
 
 const { t } = useI18n();
 const auth = useAuthStore();
 const loading = ref(true);
+const { isActive: showServiceArea } = useExperiment(ExperimentId.SERVICE_AREA);
 const saving = ref(false);
 const success = ref(false);
 const error = ref("");
