@@ -327,3 +327,41 @@ Rama `fix/auditoria-web`; pruebas en `tests/audit-fixes.spec.js` (10). Resultado
 | `48048b0` fix(web): usa lenguaje neutro en los textos visibles | Femenino genérico a "prestador/a" | Inicio de sesión, registro, búsqueda, perfil, reservas, eventos, mensajes | Login, registro y búsqueda |
 
 Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificaron.
+
+## US32 — Área de atención del prestador/a
+
+| Dato | Valor |
+|---|---|
+| Rama | `feature/us32-area-de-atencion` |
+| Commits | `53cf498` test(web): US32 captura las pantallas actuales para comprobar que no cambian con el flag apagado<br>`c96ce5b` feat(web): US32 registra el área de atención y muestra el distrito y la distancia en el perfil<br>`c758939` test(web): US32 pruebas del área de atención y del perfil |
+| Pantallas afectadas | `/worker/profile` y `/client/worker/:id` |
+| Endpoints | `GET` y `PUT /api/workers/me/service-area`; `GET /api/workers/{id}?district=` |
+| Experimento | `EC-BLQ01-SA` (todo prestador/a mientras esté encendido) |
+| Eventos de tracking | Ninguno: el plan 8.2.8 no define eventos para esta historia |
+
+### Comportamiento
+
+- Con el experimento activo, el perfil del prestador/a suma la tarjeta "Área de atención": distrito
+  (lista cerrada de los 50 de Lima y Callao) y radio entero de 1 a 15 km, con guardado propio.
+- Fuera de rango o sin distrito no se envía y se comunica el rango. Si el servidor tiene otros
+  límites, se muestra su mensaje.
+- `404` en la consulta muestra el formulario vacío; `403` oculta la tarjeta.
+- El perfil que ve el cliente muestra el distrito base y la distancia aproximada **solo si el API
+  los envía** (con el experimento apagado llegan en `null`). No muestra radio ni dirección.
+- La distancia necesita el distrito del cliente: se elige en el mismo perfil, solo cuando hay
+  distrito base, y se recuerda en el navegador.
+
+### Pruebas
+
+- `tests/us32-screen-unchanged.spec.js` (4): con el flag apagado el marcado de las dos pantallas es
+  idéntico al capturado antes de implementar (`tests/__snapshots__/us32-*.html`).
+- `tests/service-area.spec.js` (32): distritos y radio, formulario, errores, `403`, textos en inglés
+  y perfil del cliente.
+- Resultado: `npm test` 320/320 (284 anteriores y 36 de US32); `npm run build` correcto (Node 24).
+
+### Capturas a tomar
+
+| Estado del flag | Captura |
+|---|---|
+| Apagado | `/worker/profile` sin la tarjeta |
+| Encendido | Tarjeta vacía, área guardada, radio fuera de rango y perfil visto por el cliente con la distancia |

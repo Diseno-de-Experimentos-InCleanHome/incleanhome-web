@@ -41,6 +41,9 @@
               <div v-if="worker.gender" class="info-row"><AppIcon name="person" :size="16" /><span>{{ t(`worker.${worker.gender}`) }}</span></div>
               <div v-if="worker.experienceYears" class="info-row"><AppIcon name="clock" :size="16" /><span>{{ worker.experienceYears }} años de experiencia</span></div>
               <div v-if="worker.phone" class="info-row"><AppIcon name="phone" :size="16" /><span>{{ worker.phone }}</span></div>
+              <WorkerLocation v-if="worker.serviceDistrict" v-model:district="clientDistrict"
+                :service-district="worker.serviceDistrict" :distance-km="worker.approxDistanceKm"
+                @update:district="changeDistrict" />
             </div>
           </div>
         </div>
@@ -130,6 +133,9 @@ import { PLATFORM, TrackingEventName } from "../../../Tracking/domain/model/trac
 import { newId } from "../../../Tracking/domain/model/tracking-event.entity.js";
 import { ExperimentId } from "../../../Experiments/domain/model/experiment.value.js";
 import { useExperiment } from "../../../Experiments/presentation/composables/useExperiment.js";
+import WorkerLocation from "../components/WorkerLocation.vue";
+import { useAuthStore } from "../../../IAM/application/auth.store.js";
+import { DistrictStorage } from "../../../Shared/infrastructure/storage/district.storage.js";
 import VerifiedReviewsSection from "../../../ReviewsAndEvaluation/presentation/components/VerifiedReviewsSection.vue";
 import { useVerifiedReviews } from "../../../ReviewsAndEvaluation/presentation/composables/useVerifiedReviews.js";
 
@@ -141,6 +147,21 @@ const reviews = ref([]);
 const loading = ref(true);
 // Identifica esta visita para registrar una sola vez cada evento de la pantalla.
 const viewId = newId();
+
+// US32: distrito del cliente, solo para pedir la distancia aproximada.
+const auth = useAuthStore();
+const clientDistrict = ref(DistrictStorage.get(auth.user?.id));
+
+async function changeDistrict(district) {
+  DistrictStorage.set(auth.user?.id, district);
+  try {
+    const updated = await CatalogService.getWorker(route.params.id, { district });
+    // Una respuesta atrasada de otro distrito no reemplaza la elección vigente.
+    if (district === clientDistrict.value) worker.value = updated;
+  } catch (error) {
+    console.error("No se pudo actualizar la distancia", error);
+  }
+}
 
 function trackView(eventName, properties) {
   TrackingService.track(eventName, properties,
@@ -166,7 +187,7 @@ onMounted(async () => {
   try {
     const id = route.params.id;
     const [w, av, rv] = await Promise.all([
-      CatalogService.getWorker(id),
+      CatalogService.getWorker(id, { district: clientDistrict.value }),
       CatalogService.getWorkerAvailability(id),
       ReviewService.listForWorker(id),
     ]);

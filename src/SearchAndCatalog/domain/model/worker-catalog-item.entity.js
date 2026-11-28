@@ -4,7 +4,7 @@
  */
 export class WorkerCatalogItem {
   constructor({ id, name, age, gender, bio, phone, serviceTypes, zones,
-    hourlyRate, experienceYears, averageRating, totalServices }) {
+    hourlyRate, experienceYears, averageRating, totalServices, serviceDistrict, approxDistanceKm }) {
     this.id                 = id;
     this.name               = name;
     this.age                = age;
@@ -17,6 +17,10 @@ export class WorkerCatalogItem {
     this.experienceYears    = experienceYears;
     this.averageRating      = averageRating;
     this.totalServices      = totalServices;
+    // US32: solo llegan en el perfil, con la funcionalidad activa para el prestador/a.
+    this.serviceDistrict    = serviceDistrict ?? null;
+    // US32/US33: distancia aproximada al distrito del cliente.
+    this.approxDistanceKm   = approxDistanceKm ?? null;
   }
 
   initials() {
