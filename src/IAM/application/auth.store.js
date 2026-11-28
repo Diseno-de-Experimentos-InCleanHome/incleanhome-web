@@ -27,14 +27,35 @@ export const useAuthStore = defineStore("auth", () => {
   // by MembershipPendingView and not persisted (there's no session to persist yet).
   const membershipMessage = ref(null);
 
-  const isLoggedIn = computed(() => !!token.value && !!user.value);
+  // US40: aviso que muestra el inicio de sesión (sesión cerrada o contraseña cambiada).
+  const notice = ref(null);
 
-  function setAuth(userData, tokenData) {
-    user.value = userData;
+  const isLoggedIn = computed(() => !!token.value && !!user.value);
+  // US40: se guarda con el usuario para recordarlo al recargar.
+  const passwordChangeRequired = computed(() => user.value?.passwordChangeRequired === true);
+
+  function setAuth(userData, tokenData, { passwordChangeRequired: mustChange = false } = {}) {
+    const sessionUser = mustChange ? { ...userData, passwordChangeRequired: true } : userData;
+    user.value = sessionUser;
     token.value = tokenData;
-    AuthStorage.setUser(userData);
+    notice.value = null;
+    AuthStorage.setUser(sessionUser);
     AuthStorage.setToken(tokenData);
     apiClient.defaults.headers.common["Authorization"] = `Bearer ${tokenData}`;
+  }
+
+  function setPasswordChangeRequired(value) {
+    if (user.value && passwordChangeRequired.value !== value) updateUser({ passwordChangeRequired: value });
+  }
+
+  function setNotice(value) {
+    notice.value = value;
+  }
+
+  /** La sesión venció o se cerró desde otro dispositivo. */
+  function closeSession() {
+    clearAuth();
+    notice.value = "session_closed";
   }
 
   function clearAuth() {
@@ -73,6 +94,7 @@ export const useAuthStore = defineStore("auth", () => {
 
   return {
     user, token, isLoggedIn, setAuth, clearAuth, updateUser,
+    passwordChangeRequired, setPasswordChangeRequired, notice, setNotice, closeSession,
     challengeToken, setChallengeToken, clearChallengeToken,
     membershipMessage, setMembershipPending, clearMembershipPending,
   };

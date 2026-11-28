@@ -11,6 +11,8 @@
         <p class="login-subtitle">{{ t('auth.loginSubtitle') }}</p>
       </div>
 
+      <div v-if="auth.notice" class="notice-box" role="status">{{ t(`auth.notice.${auth.notice}`) }}</div>
+
       <div class="card card-elevated">
         <h2 class="card-title">{{ t('auth.loginTitle') }}</h2>
         <form @submit.prevent="handleLogin" class="auth-form" novalidate>
@@ -56,13 +58,16 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { AuthenticationService } from "../../application/authentication.service.js";
-import { roleHomePath } from "../../../Shared/domain/constants/roles.js";
+import { useAuthStore } from "../../application/auth.store.js";
+import { useSignInNavigation } from "../composables/useSignInNavigation.js";
 import { LIMITS, required, email, maxLength } from "../../../Shared/domain/validation/validators.js";
 import { useFormValidation } from "../../../Shared/presentation/composables/useFormValidation.js";
 import { useAuthErrorMessage } from "../composables/useAuthErrorMessage.js";
 
 const { t, locale } = useI18n();
 const router = useRouter();
+const pathAfterSignIn = useSignInNavigation();
+const auth = useAuthStore();
 // En el inicio de sesión un 401 es un correo o una contraseña incorrectos; el API lo envía en inglés.
 const errorMessage = useAuthErrorMessage({ unauthorizedKey: "auth.invalidCredentials" });
 
@@ -83,6 +88,7 @@ async function handleLogin() {
   if (!validateAll()) return;
   loading.value = true;
   error.value = "";
+  auth.setNotice(null);
   try {
     const result = await AuthenticationService.login(form.value);
     if (result.requiresTermsAcceptance) {
@@ -101,7 +107,7 @@ async function handleLogin() {
       router.push("/membership-pending");
       return;
     }
-    router.push(roleHomePath(result.user.role));
+    router.push(pathAfterSignIn(result));
   } catch (e) {
     error.value = errorMessage(e);
   } finally {
@@ -120,6 +126,7 @@ async function handleLogin() {
 .brand { font-size:1.75rem; font-weight:800; color:#1A2E4A; display:inline-block; margin: 0; }
 .brand-accent { color:#009960; }
 .login-subtitle { color:#3A4A5C; font-size:0.9375rem; margin: 0; }
+.notice-box { background:#FFF7E6; color:#7A5C10; padding:0.75rem; border-radius:0.5rem; font-size:0.875rem; margin-bottom:1rem; }
 .card-elevated { box-shadow:0 20px 40px rgba(0,0,0,0.08); padding: 2rem; }
 .card-title { font-size:1.25rem; font-weight:700; color:#1A2E4A; margin-bottom:1.5rem; }
 .auth-form { display: flex; flex-direction: column; gap: 1rem; }
