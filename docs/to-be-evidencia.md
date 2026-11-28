@@ -486,3 +486,19 @@ Los textos legales (`public/docs/terms-v3.md` y `privacy-v3.md`) no se modificar
 |---|---|
 | Apagado o control | Mis reservas abierta desde el enlace, sin reseña emergente |
 | Tratamiento | Reseña abierta desde el enlace, petición con `source` y aviso de reserva ya calificada |
+
+## Verificación en navegador de US32, US33, US35 y US40
+
+Chrome contra el backend local (`develop` en `7101063`) sobre una copia desechable de la base
+demo, con los experimentos activos al 100 %. El contrato usado coincide con su Swagger.
+
+| Recorrido | Comprobaciones |
+|---|---|
+| US32, US33, US35 y US40: guardar y ver el área, reservar desde una sugerencia, calificar desde el enlace con y sin sesión, reportar un acceso y cambiar la contraseña | 22 correctas |
+| Barra superior de los tres roles a 390, 1499, 1500 y 1920 px, en español e inglés | 15 correctas |
+| Cambio obligatorio (`Security__EnforcePasswordChange=true`) | 4 correctas |
+
+No se comprobó en navegador: los estados apagado y control (los cubren las pruebas de pantalla sin
+cambios), el envío real del correo de recordatorio ni ningún entorno de producción. Al abrir el
+enlace con una sesión vencida, la consola muestra el `401` sin capturar de la carga de reservas;
+la pantalla ya no lo capturaba antes de estas historias.
